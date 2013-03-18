@@ -1,0 +1,89 @@
+<cav:template
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cav="http://ns.therebetygers.net/cav/0.1"
+    extends="base.html">
+
+  <cav:locale lang="en" country="US" encoding="utf-8" />
+
+  <cav:definitions>
+    <cav:defvar name="editURL" strip="all">
+      <cav:var name="urlScheme"/>://<cav:var name="hostName"/>/content/<cav:var name="articleID"/>
+    </cav:defvar>
+  </cav:definitions>
+
+<cav:block name="pageScripts">
+  <script type="text/javascript">
+    var dirty = false;
+    var bodyMD = <cav:var name="bodyMD"/>;
+    var bodyDiv;
+    var bodyHTML;
+    var canEdit = <cav:var name="canEdit" type="boolean" repr="javascript"/>;
+  
+    function showEditButton() {
+    }
+    
+    function beginEditing() {
+      bodyDiv.empty();
+    }
+  
+    function discardChanges() {
+    }
+
+    function previewChanges() {
+    }
+
+    function submitChanges() {
+    }
+
+    function setupForAJAX() {
+      $("#beginEditForm").removeAttr("action");
+      $("#beginEditForm").removeAttr("method");
+    }
+
+    $(document).ready(function () {
+      bodyDiv = $("#articleBody");
+      bodyHTML = bodyDiv.html();
+      if (canEdit) {
+        showEditButton();
+      }
+    });
+  </script>
+</cav:block>
+
+<cav:block name="bodyClass">SingleArticle</cav:block>
+
+<cav:block name="headerContent">
+  <h1>S I N G L E   A R T I C L E   P A G E</h1>
+</cav:block>
+
+<cav:block name="leftSideContent">
+  <em>Left</em>
+</cav:block>
+
+<cav:block name="mainContent">
+  <cav:if test="%defined:seriesTitle">
+    <h4 id="seriesTitle"><cav:var name="seriesTitle"/><cav:if test="%defined:partNo">, Part <cav:var name="partNo"/></cav:if></h4>
+  </cav:if>
+  <h3 id="articleTitle"></h3>
+  <cav:if test="%defined:subTitle">
+    <h5 id="articleSubTitle"><cav:var name="articleSubTitle"/></h5>
+  </cav:if>
+  <div id="articleBody">
+    <cav:var name="articleBody"/>
+  </div>
+  <form id="beginEditForm" cav:attr="action=editURL" method="POST">
+    <input id="returnTo" name="returnTo" type="hidden" cav:attr="value=currentPath" />
+    <button id="editButton" name="editButton" type="submit">Edit</button>
+  </form>
+</cav:block>
+
+<cav:block name="rightSideContent">
+  <em>Right</em>
+</cav:block>
+
+<cav:block name="footerContent">
+  <p class="copyrightNotice">
+    Copyright © <cav:var name="copyrightYear"/> by <cav:var name="authorName"/>. <cav:var name="rightsStatement"/>.
+  </p>
+</cav:block>
+</cav:template>
