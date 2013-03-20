@@ -170,7 +170,17 @@
            (or (not match-tag)
                (string=? (cadr parts) match-tag)))))
 
-  (define (%cvt:var attrs content ctx) output)
+  (define (%cvt:var attrs content ctx)
+    (let* ((var-name (get-attval attrs "name"))
+           (value (ctx 'get-var var-name))
+           (req-str (get-attval attrs "required"))
+           (required (or (not req-str)
+                         (string->bool req-str))))
+      (cond
+        ((and required (not value))
+         (eprintf "No value provided for required variable '~A'\n." var-name))
+        ((value) value)
+        (else '()))))
 
   (define (%cvt:list attrs content ctx) output)
 
