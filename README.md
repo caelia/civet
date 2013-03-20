@@ -34,7 +34,7 @@ prefix. The namespace URI for the template vocabulary is
 
 For best results, please ensure that all templates in your installation use
 the same prefix for this namespace. Here at Coq au Vin World Headquarters,
-we use the prefix `cav`.
+we use the prefix `cvt`.
 
 
 
@@ -135,7 +135,7 @@ by the processor, but may also be defined within the template (see
     + node-list
 
 - **format** [optional] The name of a formatting function defined in the
-  cav-templates library or in your application. This function is usually
+  civet library or in your application. This function is usually
   associated with a specific data type. Future versions of the library may
   support locale-dependent formatters, as for dates.
 
