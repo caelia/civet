@@ -1,16 +1,17 @@
-cav-templates
-=============
+civet
+=====
 
 An XML-based templating system intended for use with the soon-to-be-released
-blogging library Coq au Vin.
+blogging library Coq au Vin. The name comes from CVT, an abbreviation for
+'Coq au Vin Templates'.
 
 
 Basic Concepts
 --------------
 
-All Coq au Vin templates must be well-formed XML. Each template consists of
+All Civet templates must be well-formed XML. Each template consists of
 markup from the target document type (e.g., XHTML), which represents literal
-output, combined with markup from the Coq au Vin template vocabulary, which
+output, combined with markup from the Civet template vocabulary, which
 controls the structure of the output and inserts dynamic content.
 
 A **template set** consists of a **base template** and one or more
@@ -29,7 +30,7 @@ content. For best results, we suggest that the default namespace be that of
 the target document type, while template vocabulary markup should use a
 prefix. The namespace URI for the template vocabulary is
 
-    http://xmlns.therebetygers.net/coq-au-vin/<version_number>
+    http://xmlns.therebetygers.net/civet/<version_number>
 
 For best results, please ensure that all templates in your installation use
 the same prefix for this namespace. Here at Coq au Vin World Headquarters,

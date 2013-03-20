@@ -1,23 +1,23 @@
-<cav:template
+<cvt:template
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cav="http://xmlns.therebetygers.net/coq-au-vin/0.1"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1"
     extends="base.html">
 
-  <cav:locale lang="en" country="US" encoding="utf-8" />
+  <cvt:locale lang="en" country="US" encoding="utf-8" />
 
-  <cav:definitions>
-    <cav:defvar name="editURL" strip="all">
-      <cav:var name="urlScheme"/>://<cav:var name="hostName"/>/content/<cav:var name="articleID"/>
-    </cav:defvar>
-  </cav:definitions>
+  <cvt:definitions>
+    <cvt:defvar name="editURL" strip="all">
+      <cvt:var name="urlScheme"/>://<cvt:var name="hostName"/>/content/<cvt:var name="articleID"/>
+    </cvt:defvar>
+  </cvt:definitions>
 
-<cav:block name="pageScripts">
+<cvt:block name="pageScripts">
   <script type="text/javascript">
     var dirty = false;
-    var bodyMD = <cav:var name="bodyMD"/>;
+    var bodyMD = <cvt:var name="bodyMD"/>;
     var bodyDiv;
     var bodyHTML;
-    var canEdit = <cav:var name="canEdit" type="boolean" repr="javascript"/>;
+    var canEdit = <cvt:var name="canEdit" type="boolean" repr="javascript"/>;
   
     function showEditButton() {
     }
@@ -48,42 +48,42 @@
       }
     });
   </script>
-</cav:block>
+</cvt:block>
 
-<cav:block name="bodyClass">SingleArticle</cav:block>
+<cvt:block name="bodyClass">SingleArticle</cvt:block>
 
-<cav:block name="headerContent">
+<cvt:block name="headerContent">
   <h1>S I N G L E   A R T I C L E   P A G E</h1>
-</cav:block>
+</cvt:block>
 
-<cav:block name="leftSideContent">
+<cvt:block name="leftSideContent">
   <em>Left</em>
-</cav:block>
+</cvt:block>
 
-<cav:block name="mainContent">
-  <cav:if test="%defined:seriesTitle">
-    <h4 id="seriesTitle"><cav:var name="seriesTitle"/><cav:if test="%defined:partNo">, Part <cav:var name="partNo"/></cav:if></h4>
-  </cav:if>
+<cvt:block name="mainContent">
+  <cvt:if test="%defined:seriesTitle">
+    <h4 id="seriesTitle"><cvt:var name="seriesTitle"/><cvt:if test="%defined:partNo">, Part <cvt:var name="partNo"/></cvt:if></h4>
+  </cvt:if>
   <h3 id="articleTitle"></h3>
-  <cav:if test="%defined:subTitle">
-    <h5 id="articleSubTitle"><cav:var name="articleSubTitle"/></h5>
-  </cav:if>
+  <cvt:if test="%defined:subTitle">
+    <h5 id="articleSubTitle"><cvt:var name="articleSubTitle"/></h5>
+  </cvt:if>
   <div id="articleBody">
-    <cav:var name="articleBody"/>
+    <cvt:var name="articleBody"/>
   </div>
-  <form id="beginEditForm" cav:attr="action=editURL" method="POST">
-    <input id="returnTo" name="returnTo" type="hidden" cav:attr="value=currentPath" />
+  <form id="beginEditForm" cvt:attr="action=editURL" method="POST">
+    <input id="returnTo" name="returnTo" type="hidden" cvt:attr="value=currentPath" />
     <button id="editButton" name="editButton" type="submit">Edit</button>
   </form>
-</cav:block>
+</cvt:block>
 
-<cav:block name="rightSideContent">
+<cvt:block name="rightSideContent">
   <em>Right</em>
-</cav:block>
+</cvt:block>
 
-<cav:block name="footerContent">
+<cvt:block name="footerContent">
   <p class="copyrightNotice">
-    Copyright © <cav:var name="copyrightYear"/> by <cav:var name="authorName"/>. <cav:var name="rightsStatement"/>.
+    Copyright © <cvt:var name="copyrightYear"/> by <cvt:var name="authorName"/>. <cvt:var name="rightsStatement"/>.
   </p>
-</cav:block>
-</cav:template>
+</cvt:block>
+</cvt:template>

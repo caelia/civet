@@ -4,31 +4,31 @@
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cav="http://xmlns.therebetygers.net/coq-au-vin/0.1"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1"
     xml:lang="en" lang="en">
   <head>
-    <title><cav:var name="htmlTitle"/></title>
-    <script type="text/javascript" cav:attr="src=jquerySrc"></script>
-    <cav:block name="pageScripts"/>
-    <cav:block name="styleSheets"/>
+    <title><cvt:var name="htmlTitle"/></title>
+    <script type="text/javascript" cvt:attr="src=jquerySrc"></script>
+    <cvt:block name="pageScripts"/>
+    <cvt:block name="styleSheets"/>
   </head>
-  <body cav:attr="class=%list:bodyClasses;">
+  <body cvt:attr="class=%list:bodyClasses;">
     <div id="header" >
-      <cav:block name="headerContent"/>
+      <cvt:block name="headerContent"/>
     </div>
     <div id="mainRegion">
       <div id="leftSide">
-        <cav:block name="leftSideContent"/>
+        <cvt:block name="leftSideContent"/>
       </div>
       <div id="contentArea">
-        <cav:block name="mainContent"/>
+        <cvt:block name="mainContent"/>
       </div>
       <div id="rightSide">
-        <cav:block name="rightSideContent"/>
+        <cvt:block name="rightSideContent"/>
       </div>
     </div>
     <div id="footer" >
-      <cav:block name="footerContent"/>
+      <cvt:block name="footerContent"/>
     </div>
   </body>
 </html>
