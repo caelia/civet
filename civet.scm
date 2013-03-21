@@ -35,13 +35,18 @@
 
 (define *template-blocks* (make-parameter (make-hash-table)))
 
-(define civet-ns-uri "http://xmlns.therebetygers.net/civet/0.1")
-
-(define civet-ns-prefix (make-parameter 'cvt))
-
-(define (default-nsmap)
-  `((#f . "http://www.w3.org/1999/xhtml")
-    (,(cvt-ns-prefix) . ,cvt-ns-uri)))
+; (define civet-ns-uri "http://xmlns.therebetygers.net/civet/0.1")
+; 
+; (define civet-ns-prefix (make-parameter 'cvt))
+; 
+; (define (default-nsmap)
+;   `((#f . "http://www.w3.org/1999/xhtml")
+;     (,(cvt-ns-prefix) . ,cvt-ns-uri)))
+; 
+(define *default-nsmap*
+  (make-parameter
+    '((#f . "http://www.w3.org/1999/xhtml")
+      ((cvt . "http://xmlns.therebetygers.net/civet/0.1")))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -84,7 +89,7 @@
 ;;; ----  CONTEXT OBJECTS  -------------------------------------------------
 
 (define (make-context #!optional (vars '())
-                      #!key (nsmap (default-nsmap)) (attrs '()))
+                      #!key (nsmap (*default-nsmap*)) (attrs '()))
   (let ((parent-template #f)
         (blocks '()))
     (lambda (cmd . args)
@@ -123,7 +128,7 @@
         ((get-block)
          (alist-ref (car args) blocks))
         ((set-block!)
-         (alist-update! (car args) (cadr args) blocks)))))))
+         (alist-update! (car args) (cadr args) blocks))))))
 
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
@@ -141,7 +146,7 @@
         (< cached-modtime raw-modtime))))
 
 (define (load-template name #!key (ext "xhtml") (nsmap '()))
-  (let* ((nsmap* (alist-merge (default-nsmap) nsmap))
+  (let* ((nsmap* (alist-merge (*default-nsmap*) nsmap))
          (raw-template (make-pathname (template-path) name ext))
          (cached-template (make-pathname (template-cache-path) name "sxml"))
          (update? (update-cached-template? raw-template cached-template))
