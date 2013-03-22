@@ -45,9 +45,9 @@ Template Vocabulary
 
 #### template
 
-This is the document element for a non-base template. As of Version 0.1, all
-child nodes of a `template` element must be `block` elements. If any other
-content is included, the behavior is undefined.
+This is the document element for a non-base template. As of Version 0.1, a
+`template` element may only contain `block`, `locale`, and `defvar`
+elements. If any other content is included, the behavior is undefined.
 
 A base template does **not** use `template`; rather, its document element
 should be the document element required by the target document type.
@@ -98,8 +98,6 @@ those whose IDs match) among different templates in a set.
   level.
 
 
-#### super
-
 #### var
 
 A placeholder for inserting dynamic content. Variables are generally passed
@@ -132,22 +130,14 @@ by the processor, but may also be defined within the template (see
 
     + element
 
+    + list:&lt;type&gt;
+
     + node-list
 
 - **format** [optional] The name of a formatting function defined in the
   civet library or in your application. This function is usually
   associated with a specific data type. Future versions of the library may
   support locale-dependent formatters, as for dates.
-
-
-#### list
-
-This element is like `var`, but it defines a list of non-markup items to
-insert. The inserted elements are separated by whitespace.
-
-##### Attributes for `list`:
-
-See `var`.
 
 
 #### object
@@ -167,8 +157,29 @@ See `var`.
 
 #### defvar
 
+##### Attributes for `defvar`:
 
-#### setattr
+- **name** [required] 
 
 
 #### attr
+
+- **name** [required]
+
+- **type** [optional, default: string]
+
+- **var**  [optional] Either this attribute or a `var` child element must be
+  present.
+
+
+#### locale
+
+##### Attributes for `locale`:
+
+- **lang**
+
+- **country**
+
+- **encoding**
+
+- **date-format**
