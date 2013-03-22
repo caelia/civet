@@ -8,11 +8,12 @@
     xml:lang="en" lang="en">
   <head>
     <title><cvt:var name="htmlTitle"/></title>
-    <script type="text/javascript" cvt:attr="src=jquerySrc"></script>
+    <script type="text/javascript" cvt:src="jquerySrc"></script>
     <cvt:block name="pageScripts"/>
     <cvt:block name="styleSheets"/>
   </head>
-  <body cvt:attr="class=%list:bodyClasses;">
+  <body> 
+    <cvt:attr name="class" type="list:string" var="bodyClasses">
     <div id="header" >
       <cvt:block name="headerContent"/>
     </div>

@@ -5,11 +5,9 @@
 
   <cvt:locale lang="en" country="US" encoding="utf-8" />
 
-  <cvt:definitions>
-    <cvt:defvar name="editURL" strip="all">
-      <cvt:var name="urlScheme"/>://<cvt:var name="hostName"/>/content/<cvt:var name="articleID"/>
-    </cvt:defvar>
-  </cvt:definitions>
+  <cvt:defvar name="editURL" strip="all">
+    <cvt:var name="urlScheme"/>://<cvt:var name="hostName"/>/content/<cvt:var name="articleID"/>
+  </cvt:defvar>
 
 <cvt:block name="pageScripts">
   <script type="text/javascript">
@@ -17,7 +15,7 @@
     var bodyMD = <cvt:var name="bodyMD"/>;
     var bodyDiv;
     var bodyHTML;
-    var canEdit = <cvt:var name="canEdit" type="boolean" repr="javascript"/>;
+    var canEdit = <cvt:var name="canEdit" type="boolean" repr="ls"/>;
   
     function showEditButton() {
     }
@@ -71,8 +69,8 @@
   <div id="articleBody">
     <cvt:var name="articleBody"/>
   </div>
-  <form id="beginEditForm" cvt:attr="action=editURL" method="POST">
-    <input id="returnTo" name="returnTo" type="hidden" cvt:attr="value=currentPath" />
+  <form id="beginEditForm" cvt:action="editURL" method="POST">
+    <input id="returnTo" name="returnTo" type="hidden" cvt:value="currentPath" />
     <button id="editButton" name="editButton" type="submit">Edit</button>
   </form>
 </cvt:block>
