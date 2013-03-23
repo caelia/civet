@@ -336,8 +336,44 @@
             (not (eqv? (car node) '@))))
       kids)))
 
+(define (cvt-elt? tag #!optional (match-tag #f))
+  (let ((parts (string-split (symbol->string tag) ":")))
+    (and (= (length parts) 2)
+         (string=? (ctx 'pfx->uri (string->symbol (car parts)))
+                   (*civet-ns-uri*))
+         (or (not match-tag)
+             (string=? (cadr parts) match-tag)))))
 
-(define (resolve-block block-data ctx)
+(define (%cvt:block attrs content ctx) #f)
+
+(define (%cvt:var attrs content ctx) #f)
+
+(define (%cvt:list attrs content ctx) #f)
+
+(define (%cvt:object attrs content ctx) #f)
+
+(define (%cvt:field attrs content ctx) #f)
+
+(define (%cvt:if attrs content ctx) #f)
+
+(define (%cvt:else attrs content ctx) #f)
+
+(define (%cvt:each attrs content ctx) #f)
+
+(define (%cvt:with attrs content ctx) #f)
+
+(define (%cvt:defvar attrs content ctx) #f)
+
+(define (%cvt:attr attrs content ctx) #f)
+
+(define (%cvt:* attrs content ctx) #f)
+
+(define (%* attrs content ctx) #f)
+
+(define (@* name value ctx) #f)
+
+
+(define (process-block block-data ctx)
 
   (define (cvt-elt? tag #!optional (match-tag #f))
     (let ((parts (string-split (symbol->string tag) ":")))
@@ -359,30 +395,6 @@
         ((value) value)
         (else '()))))
 
-  (define (%cvt:object attrs content ctx) #f)
-
-  (define (%cvt:field attrs content ctx) #f)
-
-  (define (%cvt:if attrs content ctx) #f)
-
-  (define (%cvt:else attrs content ctx) #f)
-
-  (define (%cvt:each attrs content ctx) #f)
-
-  (define (%cvt:with attrs content ctx) #f)
-
-  (define (%cvt:defvar attrs content ctx) #f)
-
-  (define (%cvt:attr attrs content ctx) #f)
-
-  (define (%cvt:@* name value ctx) #f)
-
-  (define (%cvt:* attrs content ctx) #f)
-
-  (define (%* attrs content ctx) #f)
-
-  (define (@* name value ctx) #f)
-
   (define (process-tree tree ctx)
     (let ((head (car tree)))
       (if (list? head)
@@ -403,43 +415,7 @@
             ((cvt-elt? head 'attr) (%cvt:attr attrs content ctx))
             (else tree)))))))
 
-(define (resolve-template tpl ctx)
-
-  (define (cvt-elt? tag #!optional (match-tag #f))
-    (let ((parts (string-split (symbol->string tag) ":")))
-      (and (= (length parts) 2)
-           (string=? (ctx 'pfx->uri (string->symbol (car parts)))
-                     (*civet-ns-uri*))
-           (or (not match-tag)
-               (string=? (cadr parts) match-tag)))))
-
-  (define (%cvt:block attrs content ctx) #f)
-
-  (define (%cvt:var attrs content ctx) #f)
-
-  (define (%cvt:list attrs content ctx) #f)
-
-  (define (%cvt:object attrs content ctx) #f)
-
-  (define (%cvt:field attrs content ctx) #f)
-
-  (define (%cvt:if attrs content ctx) #f)
-
-  (define (%cvt:else attrs content ctx) #f)
-
-  (define (%cvt:each attrs content ctx) #f)
-
-  (define (%cvt:with attrs content ctx) #f)
-
-  (define (%cvt:defvar attrs content ctx) #f)
-
-  (define (%cvt:attr attrs content ctx) #f)
-
-  (define (%cvt:* attrs content ctx) #f)
-
-  (define (%* attrs content ctx) #f)
-
-  (define (@* name value ctx) #f)
+(define (process-template tpl ctx)
 
   (define (process-tree tree ctx)
     (let ((head (car tree)))
@@ -471,58 +447,6 @@
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
-
-
-;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
-;;; ----  TESTING  ---------------------------------------------------------
-
-; (define (var-test-setup vars)
-;   (let ((var-table (*template-vars*)))
-;     (for-each
-;       (lambda (elt)
-;         (let ((k (car elt)) (v (cdr elt)))
-;           (hash-table-set! var-table k v)))
-;       vars)))
-; 
-; (define (article-var-test)
-;   (clear-template-vars)
-;   (var-test-setup
-;     '(("urlScheme" . "HTTP") ("hostName" . "blog.therebetygers.net")
-;       ("articleID" . "4173208") ("bodyMD" . "lotsa Markdown!")
-;       ("canEdit" . "FALSE") ("seriesTitle" . "Mythical Creatures")
-;       ("partNo" . "23") ("articleTitle" . "The Snark Was a Boojum, You See")
-;       ("articleSubTitle" . "Or, How Toasted-Cheese Met His Match")
-;       ("articleBody" . "BODDYBODDY") ("copyrightYear" . "2011-2013")
-;       ("authorName" . "Margaret Snatcher")
-;       ("rightsStatement" . "You have no rights!")))
-;   (let ((doc (load-template "article" ext: "html"))
-;         (rules (append template-rules alist-conv-rules*)))
-;     (pp (pre-post-order* doc rules))))
-; 
-; (define (article-var+att-test)
-;   (clear-template-vars)
-;   (var-test-setup
-;     '(("urlScheme" . "HTTP") ("hostName" . "blog.therebetygers.net")
-;       ("articleID" . "4173208") ("bodyMD" . "lotsa Markdown!")
-;       ("canEdit" . "FALSE") ("seriesTitle" . "Mythical Creatures")
-;       ("partNo" . "23") ("articleTitle" . "The Snark Was a Boojum, You See")
-;       ("articleSubTitle" . "Or, How Toasted-Cheese Met His Match")
-;       ("articleBody" . "BODDYBODDY") ("copyrightYear" . "2011-2013")
-;       ("authorName" . "Margaret Snatcher")
-;       ("rightsStatement" . "You have no rights!")
-;       ("editURL" . "/path/for/editing") ("currentPath" . "/you/are/here")))
-;   (let ((doc (load-template "article" ext: "html"))
-;         (rules (append template-rules alist-conv-rules*)))
-;     (pp (pre-post-order* doc rules))))
-; 
-; (define (base-var-test)
-;   (clear-template-vars)
-;   (var-test-setup '(("htmlTitle" . "This is my template document.")))
-;   (let ((doc (load-template "base" ext: "html"))
-;         (rules (append template-rules alist-conv-rules*)))
-;     (pp (pre-post-order* doc rules))))
-
-;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 ) ; END MODULE
 
