@@ -38,26 +38,158 @@ we use the prefix `cvt`.
 
 
 
-Template Vocabulary
--------------------
+Template Vocabulary, version 0.9
+--------------------------------
+
+The following describes the complete vocabulary of elements and attributes
+represented by the `civet` namespace. At present there is no formal
+specification or schema for the language, and this document may be regarded
+as a normative reference.  Please report any language in this document that
+you find ambiguous or insufficiently clear.
+
+Also, each element description includes a **Contents** subsection,
+describing what child nodes are required or allowed. However, for all
+elements, unless otherwise noted, markup from the target vocabulary is
+permitted within any element of the template vocabulary, and comments and
+processing instructions are unrestricted.
+
 
 ### ELEMENTS
 
 #### template
 
-This is the document element for a non-base template. As of Version 0.1, a
-`template` element may only contain `block`, `locale`, and `defvar`
-elements. If any other content is included, the behavior is undefined.
+This is the document element for an extension template. As of Version 0.1, a
+`template` element may only contain `config`, `locale`, `defvar`, and
+`block` elements. Any other content will be discarded by the processor.
 
 A base template does **not** use `template`; rather, its document element
 should be the document element required by the target document type.
 
-##### Attributes for `template`:
+##### Context:
 
-- **extends** [required] Contains a reference to the parent template, expressed
-  as a system file path.
+Occurs only as the document element of an extension template.
+
+##### Content:
+
+May contain, in the following order:
+
+- **head** [optional]
+
+- **block** [zero or more]
+
+May not contain text nodes or any markup from the target vocabulary.
+
+##### Attributes:
+
+- **extends** [required] Contains a reference to the parent template,
+  expressed as a system file path.
+
+------------------------------------------------------------------------
+
+#### head
+
+##### Context:
+
+First child of the document element of a template.
+
+##### Contents:
+
+May contain, in any order:
+
+- **config** [optional]
+
+- **locale** [optional]
+
+- **defvar** [zero or more]
 
 
+------------------------------------------------------------------------
+
+#### config
+
+##### Context:
+
+Within `head`.
+
+##### Contents:
+
+- **param** [zero or more]
+
+
+------------------------------------------------------------------------
+
+#### param
+
+Sets a parameter that controls some aspect of processor behavior.
+
+##### Context:
+
+Within `config`.
+
+##### Content:
+
+Empty.
+
+##### Attributes:
+
+- **name** [required] The name of the parameter.
+
+- **type** [optional, default=string] The expected datatype.
+
+- **value** [optional] Sets the value. If this attribute is ommitted,
+  the parameter becomes undefined, which is usually an error but may be
+  useful in special cases.
+
+
+------------------------------------------------------------------------
+
+#### locale
+
+##### Context:
+
+Within `config`.
+
+##### Content:
+
+Empty.
+
+##### Attributes:
+
+- **lang**
+
+- **country**
+
+- **encoding**
+
+- **date-format**
+
+
+------------------------------------------------------------------------
+
+#### defvar
+
+##### Context:
+
+Within a `head`, `block`, or `with`.
+
+##### Content:
+
+Any element other than `template`, `head`, or `block`
+
+##### Attributes:
+
+- **name** [required] 
+
+- **type** [optional, default=auto] The value may be any known datatype,
+  where *known* includes the built-in types and any types defined in the
+  processing application. A value of *auto* means that the type will be
+  `node-set` if this element contains any markup, otherwise `string`.
+
+- **value** [optional] This attribute may be used instead of child nodes to
+  specify the value, if the value consists of a single text node. 
+
+
+------------------------------------------------------------------------
 #### block
 
 A *block* is the basic unit of document structure, and may contain any type
@@ -92,11 +224,13 @@ those whose IDs match) among different templates in a set.
   ancestor template. The `super` element may be used to include the content
   from the ancestor.
 
-##### Attributes for `block`:
+##### Attributes:
 
 - **id** [required] An arbitrary identifier that must be unique at document
   level.
 
+
+------------------------------------------------------------------------
 
 #### var
 
@@ -104,7 +238,7 @@ A placeholder for inserting dynamic content. Variables are generally passed
 by the processor, but may also be defined within the template (see
 `defvar`). Assignment is not supported.
 
-##### Attributes for `var`:
+##### Attributes:
 
 - **name** [required] The identifier for the variable; in order to insert
   content, this value must be matched in the `vars` alist defined in the
@@ -140,30 +274,56 @@ by the processor, but may also be defined within the template (see
   support locale-dependent formatters, as for dates.
 
 
+------------------------------------------------------------------------
+
 #### object
 
+
+##### Attributes:
+
+- **name** [required] Equivalent to the name attribute for `var` and `block`.
+
+
+------------------------------------------------------------------------
 
 #### field
 
 
+------------------------------------------------------------------------
+
 #### if
 
+
+------------------------------------------------------------------------
 
 #### else
 
 
-#### each
+------------------------------------------------------------------------
 
+#### for-each
+
+##### Attributes:
+
+- **name** [required] Equivalent to the name attribute for `var` and `block`.
+
+- **sort** [optional, default=auto] The sorting method to use. May be 'alpha',
+  'numeric', 'auto', or the name of a user-defined procedure. 'Auto' means
+  that civet will select a sorting method based on the datatype of the
+  variable. This may degrade performance and produce unexpected results, so
+  it is best to specify the sorting method whenever possible. 
+
+- **sort-field** [optional] If the variable refers to a list of objects, this
+  attribute specifies the field that should be used to sort the list.
+
+- **order** [optional, default=asc] Possible values are 'asc' and 'desc'.
+
+------------------------------------------------------------------------
 
 #### with
 
 
-#### defvar
-
-##### Attributes for `defvar`:
-
-- **name** [required] 
-
+------------------------------------------------------------------------
 
 #### attr
 
@@ -175,14 +335,22 @@ by the processor, but may also be defined within the template (see
   present.
 
 
-#### locale
+Template Processors
+-------------------
 
-##### Attributes for `locale`:
+A civet processor must fulfill the following requirements:
 
-- **lang**
+- It must support the entire template vocabulary as described in this
+  document.
 
-- **country**
+- If any templates in the input set are ill-formed or fail to conform to the
+  requirements of this document, processing must end with an error.
 
-- **encoding**
+- If template processing successfully completes, the output will be
+  well-formed XML.
 
-- **date-format**
+Any failure with respect to meeting these requirements is a bug, and may be
+reported as such. Please note, however, that since the template language
+deliberately allows templates to include arbitrary fragments composed of
+markup from non-civet vocabularies, it is impossible to guarantee the
+validity of the output document.
