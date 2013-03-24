@@ -38,7 +38,7 @@ we use the prefix `cvt`.
 
 
 
-Template Vocabulary, version 0.9
+Template Vocabulary, version 0.1
 --------------------------------
 
 The following describes the complete vocabulary of elements and attributes
@@ -96,49 +96,9 @@ First child of the document element of a template.
 
 May contain, in any order:
 
-- **config** [optional]
-
 - **locale** [optional]
 
 - **defvar** [zero or more]
-
-
-------------------------------------------------------------------------
-
-#### config
-
-##### Context:
-
-Within `head`.
-
-##### Contents:
-
-- **param** [zero or more]
-
-
-------------------------------------------------------------------------
-
-#### param
-
-Sets a parameter that controls some aspect of processor behavior.
-
-##### Context:
-
-Within `config`.
-
-##### Content:
-
-Empty.
-
-##### Attributes:
-
-- **name** [required] The name of the parameter.
-
-- **type** [optional, default=string] The expected datatype.
-
-- **value** [optional] Sets the value. If this attribute is ommitted,
-  the parameter becomes undefined, which is usually an error but may be
-  useful in special cases.
 
 
 ------------------------------------------------------------------------
@@ -190,6 +150,7 @@ Any element other than `template`, `head`, or `block`
 
 
 ------------------------------------------------------------------------
+
 #### block
 
 A *block* is the basic unit of document structure, and may contain any type
