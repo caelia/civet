@@ -144,10 +144,11 @@ Any element other than `template`, `head`, or `block`
 
 - **name** [required] 
 
-- **type** [optional, default=auto] The value may be any known datatype,
-  where *known* includes the built-in types and any types defined in the
-  processing application. A value of *auto* means that the type will be
-  `node-set` if this element contains any markup, otherwise `string`.
+- **type** [optional, default=auto] The value may be any known datatype, where
+  *known* includes the built-in types and any types defined in the processing
+  application. A value of *auto* means that the type will be `node-set` if
+  this element contains any markup from the target vocabulary, otherwise
+  `string`.
 
 - **value** [optional] This attribute may be used instead of child nodes to
   specify the value, if the value consists of a single text node. 
@@ -300,6 +301,20 @@ by the processor, but may also be defined within the template (see
   present.
 
 
+### ATTRIBUTES
+
+In addition to the attributes defined above for template vocabulary
+elements, any uprefixed attribute from the target vocabulary may have the
+`civet` namespace prefix applied to it. This indicates to the processor that
+the attribute's value is a variable reference; when encountering such an
+attribute, the processor will substitute the variable's value for the
+reference and remove the prefix. Note that this method permits only the
+substitution of a primitive data type with an obvious string representation.
+If you require any more complex manipulations, such as converting lists or
+objects to strings, or conditional processing, you must use the `attr`
+element.
+
+
 Template Processors
 -------------------
 
@@ -312,7 +327,7 @@ A civet processor must fulfill the following requirements:
   requirements of this document, processing must end with an error.
 
 - If template processing successfully completes, the output will be
-  well-formed XML.
+  well-formed XML, with all markup from the template vocabulary removed.
 
 Any failure with respect to meeting these requirements is a bug, and may be
 reported as such. Please note, however, that since the template language
