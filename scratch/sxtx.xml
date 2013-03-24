@@ -1,0 +1,13 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:fubar="http://fu.bar.com/ns">
+  <head>
+    <title>My Test Document</title>
+    <fubar:meta>
+      <fubar:created-date>2013-03-23</fubar:created-date>
+      <fubar:license>Creative Commons</fubar:license>
+    </fubar:meta>
+  </head>
+  <body class="fubar">
+    <h1>Hi there!</h1>
+    <p class="boilerplate">Lorem Ipsum etc. etc.</p>
+  </body>
+</html>
