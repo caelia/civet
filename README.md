@@ -53,6 +53,10 @@ elements, unless otherwise noted, markup from the target vocabulary is
 permitted within any element of the template vocabulary, and comments and
 processing instructions are unrestricted.
 
+Please note also, that while all elements described are handled by the
+processor and should not cause errors, some (e.g. locale) do not actually do
+anything.
+
 
 ### ELEMENTS
 
