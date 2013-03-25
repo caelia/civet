@@ -46,22 +46,9 @@
 
 (define *template-blocks* (make-parameter (make-hash-table)))
 
-; (define civet-ns-uri "http://xmlns.therebetygers.net/civet/0.1")
-
-; (define civet-ns-prefix (make-parameter 'cvt))
- 
 (define *civet-ns-prefix* (make-parameter 'cvt))
  
 (define *civet-ns-uri* (make-parameter "http://xmlns.therebetygers.net/civet/0.1"))
-
-; (define (default-nsmap)
-;   `((#f . "http://www.w3.org/1999/xhtml")
-;     (,(cvt-ns-prefix) . ,cvt-ns-uri)))
-; 
-; (define *default-nsmap*
-;   (make-parameter
-;     '((#f . "http://www.w3.org/1999/xhtml")
-;       ((cvt . "http://xmlns.therebetygers.net/civet/0.1")))))
 
 (define *default-nsmap*
   (make-parameter
@@ -203,18 +190,38 @@
          (set! nsmap (alist-merge nsmap args)))
         ((set-nsmap!)
          (set! nsmap args))
-        ((get-attrs)
-         attrs)
+        ((get-nsmap)
+         nsmap)
         ((set-attrs!)
          (set! attrs args))
         ((set-attr!)
          (alist-update! (car args) (cadr args) attrs))
+        ((get-attrs)
+         attrs)
         ((delete-attrs!)
          (set! attrs '()))
         ((get-block)
          (alist-ref (car args) blocks))
         ((set-block!)
-         (alist-update! (car args) (cadr args) blocks))))))
+         (alist-update! (car args) (cadr args) blocks))
+        ((get-blocks)
+         blocks)
+        ((set-locale!)
+         (set! locale (car args)))
+        ((set-lang!)
+         (alist-update! 'lang (car args) locale))
+        ((set-country!)
+         (alist-update! 'country (car args) locale))
+        ((set-encoding!)
+         (alist-update! 'encoding (car args) locale))
+        ((set-date-format!)
+         (alist-update! 'date-format (car args) locale))
+        ((get-locale)
+         locale)
+        ((set-state!)
+         (set! state (car args)))
+        ((get-state)
+         state))))))
 
 
 (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
@@ -435,50 +442,57 @@
 
 (define (@* name value ctx) #f)
 
+(define (process-content content ctx)
+  ;; content = any content nodes not processed by higher-level handlers
+  ;; ctx = context provided by template or block
+  ;; 1. process all child nodes
+  ;; 2. return result
+  ;;
+  #f)
 
-(define (process-block block-data ctx)
+(define (process-block block block-data ctx)
+  ;; block = the block to be processed
+  ;; block-data = alist of blocks
+  ;; ctx = context from template level
+  ;;
+  ;; 1. push state 'block
+  ;; 2. check for same block in block-data. If found, remove block from block-data
+  ;;    & recurse w/ overriding block
+  ;; 3. process content w/ process-content
+  ;; 4. pop state
+  ;; 5. return transformed content
+  ;;
+  #f)
 
-  (define (process-children tree ctx)
-    (let ((head (car tree)))
-      (if (list? head)
-        (map
-          (lambda (t) (process-children t ctx))
-          tree)
-        (let ((attrs (get-attrs tree))
-              (content (get-content tree)))
-          (cond
-            ((cvt-elt? head 'var) (%cvt:var attrs content ctx))
-            ((cvt-elt? head 'object) (%cvt:object attrs content ctx))
-            ((cvt-elt? head 'field) (%cvt:field attrs content ctx))
-            ((cvt-elt? head 'if) (%cvt:if attrs content ctx))
-            ((cvt-elt? head 'else) (%cvt:else attrs content ctx))
-            ((cvt-elt? head 'for-each) (%cvt:for-each attrs content ctx))
-            ((cvt-elt? head 'with) (%cvt:with attrs content ctx))
-            ((cvt-elt? head 'defvar) (%cvt:defvar attrs content ctx))
-            ((cvt-elt? head 'attr) (%cvt:attr attrs content ctx))
-            (else tree)))))))
+
+(define (process-head head context nsmap)
+  ;; head = cvt:head element
+  ;; context = as provided by template
+  ;; nsmap = as provided by app
+  ;;
+  ;; 1. push state 'head
+  ;; 2. read locale data
+  ;; 3. read defvars
+  ;; 4. pop state
+  ;; 5. return new context
+  ;;
+  #f)
 
 (define (process-template template block-data context nsmap)
+  ;; template = entire base template SXML
+  ;; block-data = alist of blocks
+  ;; context = as provided by app
+  ;; nsmap = as provided by app
+  ;;
+  ;; 1. push state 'template
+  ;; 2. process head (delegate this?)
+  ;; 3. process content, including blocks & free elements
+  ;; 4. pop state
+  ;; 5. return complete tree
+  ;;
+  ;; Probably best to use SXPath to extract first head, then rest of body.
+  #f)
 
-  (define (process-tree tree ctx)
-    (let ((head (car tree)))
-      (if (list? head)
-        (map process-tree tree)
-        (let ((attrs (get-attrs tree))
-              (content (get-content tree)))
-          (cond
-            ((cvt-elt? head 'template) (%cvt:template attrs content ctx))
-            ((cvt-elt? head 'block) (%cvt:block attrs content ctx))
-            ((cvt-elt? head 'var) (%cvt:var attrs content ctx))
-            ((cvt-elt? head 'object) (%cvt:object attrs content ctx))
-            ((cvt-elt? head 'field) (%cvt:field attrs content ctx))
-            ((cvt-elt? head 'if) (%cvt:if attrs content ctx))
-            ((cvt-elt? head 'else) (%cvt:else attrs content ctx))
-            ((cvt-elt? head 'for-each) (%cvt:for-each attrs content ctx))
-            ((cvt-elt? head 'with) (%cvt:with attrs content ctx))
-            ((cvt-elt? head 'defvar) (%cvt:defvar attrs content ctx))
-            ((cvt-elt? head 'attr) (%cvt:attr attrs content ctx))
-            (else #f)))))))
 
 (define (process-template-set name context nsmap)
   (let-values (((template block-data) (build-template-set template-name nsmap)))
