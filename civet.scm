@@ -29,6 +29,8 @@
         (use srfi-69)
         (use ssax)
         (use sxml-transforms)
+        (use irregex)
+
 
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
@@ -155,6 +157,100 @@
 
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+;;; ----  TEST EXPRESSION EVALUATOR  ---------------------------------------
+
+;;; A simple expression language for use in cvt:if tests
+;;; 
+;;; The following types of expressions are supported:
+;;;
+;;;   <variable-name> [unquoted]:     Return #t if the variable is defined, #f otherwise
+;;;   <variable-name> = <value>:      Test equality with equal? . The value may be a quoted
+;;;                                   string, a number, or another variable name. 
+;;;   <variable-name> != <value>:     Test inequality with equal? . The value may be a quoted
+;;;                                   string, a number, or another variable name. 
+;;;   lt(<variable-name>, <value>):   Less-than; return #t if variable is less than value, 
+;;;                                   #f otherwise.
+;;;   gt(<variable-name>, <value>):   Greater-than; return #t if variable is greater than
+;;;                                   value, #f otherwise.
+;;;   le(<variable-name>, <value>):   Less-than-or-equal-to; return #t if variable is
+;;;                                   less than or equvalue, #f otherwise.
+;;;   ge(<variable-name>, <value>):   Greater-than-or-equal-to; return #t if variable is
+;;;                                   greater than or equal to value, #f otherwise.
+
+(define testexp-re
+  (irregex '(: bos (* space)
+               (or (=> bare-var (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
+                   (: (=> lhs-var (or alpha #\_) (+ (or alphanum ("_-:."))))
+                      (* space) (or (=> eq #\=) (=> neq (: #\! #\=))) (* space)
+                      (or (=> rhs-var (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
+                          (=> rhs-qstring (or (: #\' (=> qstring-val (* any)) #\')
+                                          (: #\\ #\" (=> qstring-val (* any)) #\\ #\")))
+                          (=> rhs-number (or (+ numeric)
+                                             (: (* numeric) #\. (+ numeric))))))
+                   (: (=> func (or (=> lt "lt") (=> gt "gt") (=> le "le") (=> ge "ge")))
+                      (* space) #\( (* space)
+                      (=> arg1 (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
+                      (* space) #\, (* space)
+                      (or (=> arg2-var (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
+                          (=> arg2-num (or (+ numeric)
+                                           (: (* numeric) #\. (+ numeric)))))
+                      (* space) #\)))
+               (* space) eos)))
+                    
+(define (eval-test test-expr ctx)
+  (let ((m (irregex-match testexp-re test-expr))
+        (ims irregex-match-substring)
+        (get-var (lambda (var-name) (ctx 'get-var (string->symbol var-name)))))
+    (if m
+      (let ((bare-var (ims m 'bare-var))
+            (lhs-var (ims m 'lhs-var))
+            (func (ims m 'func)))
+        (cond
+          (bare-var
+            (get-var bare-var))
+          (lhs-var
+            (let ((lhs-value (get-var lhs-var))
+                  (test
+                    (cond
+                      ((ims m 'eq) equal?)
+                      ((ims m 'neq) (lambda (x y) (not (equal? x y))))
+                      (else (eprintf "BUG: Relation is neither '=' nor '!='?!\n"))))
+                  (rhs-value
+                    (let ((rhs-var (ims m 'rhs-var))
+                          (rhs-number (ims m 'rhs-number))
+                          (rhs-qstring (ims m 'rhs-qstring)))
+                      (cond
+                        (rhs-var (get-var rhs-var))
+                        (rhs-number (string->number rhs-number))
+                        (rhs-qstring (ims m 'qstring-val))
+                        (else (eprintf "BUG: rhs failed to match rhs-var, rhs-number, or rhs-qstring.\n"))))))
+              (test lhs-value rhs-value)))
+          (func
+            (let ((test
+                    (case (string->symbol func)
+                      ((lt) <)
+                      ((gt) >)
+                      ((le) <=)
+                      ((ge) >=)
+                      (else (eprintf "Invalid function: '~A'\n" func))))
+                  (arg1 (get-var (ims m 'arg1)))
+                  (arg2
+                    (let ((arg2-var (ims m 'arg2-var))
+                          (arg2-num (ims m 'arg2-num)))
+                      (cond
+                        (arg2-var (get-var arg2-var))
+                        (arg2-num (string->number arg2-num))
+                        (else (eprintf "Error: invalid argument to function '~A'\n" func))))))
+              (test arg1 arg2))))))))
+
+
+      (eprintf "Invalid test expression: '~A'\n" test-expr)
+      
+;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+
+
+;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  CONTEXT OBJECTS  -------------------------------------------------
 
 ;; A context object is a closure encapsulating several alists:
@@ -164,6 +260,8 @@
 ;;   - locale:  containing language, country, encoding, and other localization
 ;;              parameters
 ;;   - blocks:  containing template blocks extracted from extension templates
+;; --and the 'state' symbol, whose value is one of:
+;;     init template head block
 (define (make-context #!key (vars '()) (attrs '()) (nsmap (*default-nsmap*))
                       (locale '()) (blocks '()) (state 'init))
   (let ((blocks '()))
@@ -424,7 +522,19 @@
 
 (define (%cvt:field attrs content ctx) #f)
 
-(define (%cvt:if attrs content ctx) #f)
+(define (%cvt:if attrs content ctx)
+  (let* ((test-expr (get-attval attrs "test"))
+         (test-result (eval-test text-expr ctx))
+         (else-node
+           (let ((se (sxpath '(cvt:else) (*sxpath-nsmap*))))
+             (se content))))
+    (cond
+      (test-result
+        (process-children content (context->context ctx test: #t)))
+      ((and (not test-result) else-node)
+       (process-children else-node))
+      (else
+        '()))))
 
 (define (%cvt:else attrs content ctx) #f)
 
@@ -465,10 +575,9 @@
   #f)
 
 
-(define (process-head head context nsmap)
+(define (process-head head context)
   ;; head = cvt:head element
   ;; context = as provided by template
-  ;; nsmap = as provided by app
   ;;
   ;; 1. push state 'head
   ;; 2. read locale data
@@ -478,11 +587,10 @@
   ;;
   #f)
 
-(define (process-template template block-data context nsmap)
+(define (process-template template block-data context)
   ;; template = entire base template SXML
   ;; block-data = alist of blocks
   ;; context = as provided by app
-  ;; nsmap = as provided by app
   ;;
   ;; 1. push state 'template
   ;; 2. process head (delegate this?)
@@ -494,12 +602,12 @@
   #f)
 
 
-(define (process-template-set name context nsmap)
+(define (process-template-set name context)
   (let-values (((template block-data) (build-template-set template-name nsmap)))
     (process-template template blocks context nsmap)))
 
 (define (render template-name context #!key (port #f) (file #f) (nsmap '()))
-  (let ((final-tree (process-template-set template-name context nsmap)))
+  (let ((final-tree (process-template-set template-name context)))
     (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*))))
 
 
