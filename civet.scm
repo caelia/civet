@@ -94,16 +94,36 @@
       (make-pathname (template-path) ".cache")))
        
 (define (alist-merge alist1 alist2)
-  (let ((merge
-          (lambda (out-list in-list)
-            (let loop ((out out-list)
-                       (in in-list))
-              (if (null? in)
-                out
-                (let ((k (caar in))
-                      (v (cdar in)))
-                  (loop (alist-update k v out) (cdr in))))))))
-    (merge (merge '() alist1) alist2)))
+  (cond
+    ((and (not alist1) (not alist2)) '())
+    ((not alist1) alist2)
+    ((not alist2) alist1)
+    (else
+      (let ((merge
+              (lambda (out-list in-list)
+                (let loop ((out out-list)
+                           (in in-list))
+                  (if (null? in)
+                    out
+                    (let ((k (caar in))
+                          (v (cdar in)))
+                      (loop (alist-update k v out) (cdr in))))))))
+        (merge (merge '() alist1) alist2)))))
+
+(define (alist-except alist -keys)
+  (cond
+    ((not alist) '())
+    ((not -keys) alist)
+    ((eqv? -keys 'all) '())
+    (else
+      (let loop ((in alist) (out '()))
+        (if (null? in)
+          out
+          (let ((elt (car in))
+                (rest (cdr in)))
+            (if (memv (car elt) -keys)
+              (loop rest out)
+              (loop rest (cons elt out)))))))))
     
 (define (get-var name)
   (hash-table-ref (*template-vars*) name))
@@ -150,10 +170,16 @@
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  CONTEXT OBJECTS  -------------------------------------------------
 
-(define (make-context #!optional (vars '())
-                      #!key (nsmap (*default-nsmap*)) (attrs '()))
-  (let ((parent-template #f)
-        (blocks '()))
+;; A context object is a closure encapsulating several alists:
+;;   - vars:    containing all in-scope template variables
+;;   - attrs:   containing any attributes to be set on the current context node
+;;   - nsmap:   containing the mapping of namespace prefixes to URIs
+;;   - locale:  containing language, country, encoding, and other localization
+;;              parameters
+;;   - blocks:  containing template blocks extracted from extension templates
+(define (make-context #!key (vars '()) (attrs '()) (nsmap (*default-nsmap*))
+                      (locale '()) (blocks '()) (state 'init))
+  (let ((blocks '()))
     (lambda (cmd . args)
       (case cmd
         ((get-var)
@@ -185,15 +211,28 @@
          (alist-update! (car args) (cadr args) attrs))
         ((delete-attrs!)
          (set! attrs '()))
-        ((set-parent-template!)
-         (set! parent-template (car args)))
-        ((get-parent-template)
-         parent-template)
         ((get-block)
          (alist-ref (car args) blocks))
         ((set-block!)
          (alist-update! (car args) (cadr args) blocks))))))
 
+
+(define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
+                          (-attrs #f) (+nsmap #f) (-nsmap #f)
+                          (+locale #f) (-locale #f) (+blocks #f)
+                          (-blocks #f) (new-state #f))
+  (let ((prev-vars (ctx 'get-vars))
+        (prev-attrs (ctx 'get-attrs))
+        (prev-nsmap (ctx 'get-nsmap))
+        (prev-locale (ctx 'get-locale))
+        (prev-blocks (ctx 'get-blocks))
+        (prev-state (ctx 'get-state)))
+    (make-context vars: (alist-merge (alist-except prev-vars -vars) +vars)
+                  attrs: (alist-merge (alist-except prev-attrs -attrs) +attrs)
+                  nsmap: (alist-merge (alist-except prev-nsmap -nsmap) +nsmap)
+                  locale: (alist-merge (alist-except prev-locale -locale) +locale)
+                  blocks: (alist-merge (alist-except prev-blocks -blocks) +blocks)
+                  state: (or new-state prev-state))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -301,7 +340,7 @@
                         (cons (cons name (list locale vars k)) blocks)))
                     blocks))
                 blocks kids))))
-        (values blocks template)))))
+        (values template blocks)))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -344,13 +383,37 @@
          (or (not match-tag)
              (string=? (cadr parts) match-tag)))))
 
-(define (%cvt:block attrs content ctx) #f)
+;; When encountering a new block, we need to:
+;; 1. Check whether a block with the same name is present
+;;    in the context, in which case that block will override
+;;    this one.
+(define (%cvt:block attrs content ctx)
+  (let* ((block-name (get-attval attrs "name"))
+         (override (ctx 'get-block block-name)))
+    (if override
+      (%cvt:block (get-attrs override) (get-kids override)
+                  (context->context ctx -blocks: (list block-name)))
+      (process-children content))))
 
-(define (%cvt:var attrs content ctx) #f)
 
-(define (%cvt:list attrs content ctx) #f)
+(define (%cvt:var attrs content ctx)
+  (let* ((var-name (get-attval attrs "name"))
+         (value (ctx 'get-var var-name))
+         (req-str (get-attval attrs "required"))
+         (required (or (not req-str)
+                       (string->bool req-str))))
+    (cond
+      ((and required (not value))
+       (eprintf "No value provided for required variable '~A'\n." var-name))
+      ((value) value)
+      (else '()))))
 
 (define (%cvt:object attrs content ctx) #f)
+  (let* ((obj-name (get-attval attrs "name"))
+         (value (ctx 'get-var var-name))
+         (req-str (get-attval attrs "required"))
+         (required (or (not req-str)
+                       (string->bool req-str))))
 
 (define (%cvt:field attrs content ctx) #f)
 
@@ -358,7 +421,7 @@
 
 (define (%cvt:else attrs content ctx) #f)
 
-(define (%cvt:each attrs content ctx) #f)
+(define (%cvt:for-each attrs content ctx) #f)
 
 (define (%cvt:with attrs content ctx) #f)
 
@@ -375,31 +438,11 @@
 
 (define (process-block block-data ctx)
 
-  (define (cvt-elt? tag #!optional (match-tag #f))
-    (let ((parts (string-split (symbol->string tag) ":")))
-      (and (= (length parts) 2)
-           (string=? (ctx 'pfx->uri (string->symbol (car parts)))
-                     (*civet-ns-uri*))
-           (or (not match-tag)
-               (string=? (cadr parts) match-tag)))))
-
-  (define (%cvt:var attrs content ctx)
-    (let* ((var-name (get-attval attrs "name"))
-           (value (ctx 'get-var var-name))
-           (req-str (get-attval attrs "required"))
-           (required (or (not req-str)
-                         (string->bool req-str))))
-      (cond
-        ((and required (not value))
-         (eprintf "No value provided for required variable '~A'\n." var-name))
-        ((value) value)
-        (else '()))))
-
-  (define (process-tree tree ctx)
+  (define (process-children tree ctx)
     (let ((head (car tree)))
       (if (list? head)
         (map
-          (lambda (t) (process-tree t ctx))
+          (lambda (t) (process-children t ctx))
           tree)
         (let ((attrs (get-attrs tree))
               (content (get-content tree)))
@@ -409,13 +452,13 @@
             ((cvt-elt? head 'field) (%cvt:field attrs content ctx))
             ((cvt-elt? head 'if) (%cvt:if attrs content ctx))
             ((cvt-elt? head 'else) (%cvt:else attrs content ctx))
-            ((cvt-elt? head 'each) (%cvt:each attrs content ctx))
+            ((cvt-elt? head 'for-each) (%cvt:for-each attrs content ctx))
             ((cvt-elt? head 'with) (%cvt:with attrs content ctx))
             ((cvt-elt? head 'defvar) (%cvt:defvar attrs content ctx))
             ((cvt-elt? head 'attr) (%cvt:attr attrs content ctx))
             (else tree)))))))
 
-(define (process-template tpl ctx)
+(define (process-template template block-data context nsmap)
 
   (define (process-tree tree ctx)
     (let ((head (car tree)))
@@ -431,18 +474,19 @@
             ((cvt-elt? head 'field) (%cvt:field attrs content ctx))
             ((cvt-elt? head 'if) (%cvt:if attrs content ctx))
             ((cvt-elt? head 'else) (%cvt:else attrs content ctx))
-            ((cvt-elt? head 'each) (%cvt:each attrs content ctx))
+            ((cvt-elt? head 'for-each) (%cvt:for-each attrs content ctx))
             ((cvt-elt? head 'with) (%cvt:with attrs content ctx))
             ((cvt-elt? head 'defvar) (%cvt:defvar attrs content ctx))
             ((cvt-elt? head 'attr) (%cvt:attr attrs content ctx))
             (else #f)))))))
 
+(define (process-template-set name context nsmap)
+  (let-values (((template block-data) (build-template-set template-name nsmap)))
+    (process-template template blocks context nsmap)))
 
 (define (render template-name context #!key (port #f) (file #f) (nsmap '()))
-  (let-values (((block-data template)
-                (build-template-set template-name nsmap)))
-    (let ((final-tree (process-template template block-data context nsmap)))
-      (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*)))))
+  (let ((final-tree (process-template-set template-name context nsmap)))
+    (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*))))
 
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
