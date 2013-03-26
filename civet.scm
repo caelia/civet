@@ -5,7 +5,7 @@
 ;;;   This program is open-source software, released under the
 ;;;   BSD license. See the accompanying LICENSE file for details.
 
-;@ (module civet
+(module civet
         *
         (import scheme chicken)
         (import
@@ -228,21 +228,25 @@
           (bare-var
             (get-var bare-var))
           (lhs-var
-            (let ((lhs-value (get-var lhs-var))
-                  (test
-                    (cond
-                      ((ims m 'eq) equal?)
-                      ((ims m 'neq) (lambda (x y) (not (equal? x y))))
-                      (else (eprintf "BUG: Relation is neither '=' nor '!='?!\n"))))
-                  (rhs-value
-                    (let ((rhs-var (ims m 'rhs-var))
-                          (rhs-num (ims m 'rhs-num))
-                          (rhs-qstring (ims m 'rhs-qstring)))
-                      (cond
-                        (rhs-var (get-var rhs-var))
-                        (rhs-num (string->number rhs-num))
-                        (rhs-qstring (ims m 'qstring-val))
-                        (else (eprintf "BUG: rhs failed to match rhs-var, rhs-num, or rhs-qstring.\n"))))))
+            (let* ((lhs-value (get-var lhs-var))
+                   (rhs-var (ims m 'rhs-var))
+                   (rhs-num (ims m 'rhs-num))
+                   (rhs-qstring (ims m 'rhs-qstring))
+                   (rhs-value
+                     (cond
+                       (rhs-var (get-var rhs-var))
+                       (rhs-num (string->number rhs-num))
+                       (rhs-qstring (ims m 'qstring-val))
+                       (else (eprintf "BUG: rhs failed to match rhs-var, rhs-num, or rhs-qstring.\n"))))
+                   (test
+                     (let ((eq (ims m 'eq))
+                           (neq (ims m 'neq)))
+                       (cond
+                         ((and eq (number? rhs-value)) =)
+                         (eq equal?)
+                         ((and neq (number? rhs-value)) (lambda (x y) (not (= x y))))
+                         (neq (lambda (x y) (not (equal? x y))))
+                         (else (eprintf "BUG: Relation is neither '=' nor '!='?!\n"))))))
               (test lhs-value rhs-value)))
           (func
             (let ((test
@@ -584,6 +588,8 @@
 
 (define (%cvt:defvar attrs content ctx) #f)
 
+(define (%cvt:locale attrs content ctx) #f)
+
 (define (%cvt:attr attrs content ctx) #f)
 
 (define (%cvt:* attrs content ctx) #f)
@@ -606,10 +612,19 @@
 (define (process-attrs attrs ctx)
   (map
     (lambda (attr)
-      (if (cvt-attr? attr)
+      (if (cvt-name? attr ctx)
         (%cvt:@ attr)
         attr))
     attrs))
+
+(define (cvt-name? qname ctx #!optional (match-name #f))
+  (let ((parts (string-split (symbol->string qname) ":")))
+    (and (= (length parts) 2)
+         (or (string=? (car parts) (*civet-ns-uri*))
+             (string=? (ctx 'pfx->uri (string->symbol (car parts)))
+                       (*civet-ns-uri*)))
+         (or (not match-name)
+             (string=? (cadr parts) match-name)))))
 
 ;; This is the main dispatch function
 (define (process-tree node/s ctx)
@@ -617,19 +632,7 @@
     (if (or (string? node/s) (symbol? node/s) (null? node/s))
       node/s
       (let* ((head (car node/s))
-             (tail (cdr node/s))
-             (cvt-elt?
-               (lambda (tag #!optional (match-tag #f))
-                 (let ((parts (string-split (symbol->string tag) ":")))
-                   (and (= (length parts) 2)
-                        (or (string=? (car parts) (*civet-ns-uri*))
-                            (string=? (ctx 'pfx->uri (string->symbol (car parts)))
-                                      (*civet-ns-uri*)))
-                        (or (not match-tag)
-                            (string=? (cadr parts) match-tag))))))
-             ;; FIXME!!
-             (cvt-attr?
-               (lambda (attname) #f)))
+             (tail (cdr node/s)))
         (cond
           ((null? head)
            (process-tree tail ctx))
@@ -639,24 +642,23 @@
             (map
               (lambda (node) (process-tree node ctx))
               node/s))
-          ((cvt-elt? head 'template)
+          ((cvt-name? head ctx "template")
            (assert (eqv? state 'init))
            (process-tree tail (context->context ctx state: 'template)))
-          ((cvt-elt? head 'block)
+          ((cvt-name? head ctx "block")
            (assert (not (or (eqv? state 'init) (eqv? state 'block) (eqv? state 'head))))
            (process-tree tail (context->context ctx state: 'block)))
-          ((cvt-elt? head 'head)
+          ((cvt-name? head ctx "head")
            (assert (eqv? state 'template))
            (process-tree tail (context->context ctx state: 'head)))
-          ((cvt-elt? head 'locale) (%cvt:locale node/s ctx))
-          ((cvt-elt? head 'defvar) (%cvt:defvar node/s ctx))
-          ((cvt-elt? head 'var) (%cvt:var node/s ctx))
-          ((cvt-elt? head 'attr) (%cvt:attr node/s ctx))
-          ((cvt-elt? head 'with) (%cvt:with node/s ctx))
-          ((cvt-elt? head 'if) (%cvt:if node/s ctx))
-          ((cvt-elt? head 'else) (%cvt:else node/s ctx))
-          ((cvt-elt? head 'for) (%cvt:for node/s ctx))
-          ((cvt-attr? head) (%cvt:@* node/s ctx))
+          ((cvt-name? head ctx "locale") (%cvt:locale node/s ctx))
+          ((cvt-name? head ctx "defvar") (%cvt:defvar node/s ctx))
+          ((cvt-name? head ctx "var") (%cvt:var node/s ctx))
+          ((cvt-name? head ctx "attr") (%cvt:attr node/s ctx))
+          ((cvt-name? head ctx "with") (%cvt:with node/s ctx))
+          ((cvt-name? head ctx "if") (%cvt:if node/s ctx))
+          ((cvt-name? head ctx "else") (%cvt:else node/s ctx))
+          ((cvt-name? head ctx "for") (%cvt:for node/s ctx))
           ((eqv? head '@) (%@* tail ctx))
           ((or (eqv? head '*TOP*)
                (eqv? head '*PI*)
@@ -734,7 +736,7 @@
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
-;@ ) ; END MODULE
+) ; END MODULE
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ------------------------------------------------------------------------
