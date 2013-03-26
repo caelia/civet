@@ -485,14 +485,6 @@
             (not (eqv? (car node) '@))))
       kids)))
 
-(define (cvt-elt? tag ctx #!optional (match-tag #f))
-  (let ((parts (string-split (symbol->string tag) ":")))
-    (and (= (length parts) 2)
-         (string=? (ctx 'pfx->uri (string->symbol (car parts)))
-                   (*civet-ns-uri*))
-         (or (not match-tag)
-             (string=? (cadr parts) match-tag)))))
-
 ;; When encountering a new block, we need to:
 ;; 1. Check whether a block with the same name is present
 ;;    in the context, in which case that block will override
@@ -616,8 +608,20 @@
   (let ((state (ctx 'get-state)))
     (if (or (string? node/s) (symbol? node/s) (null? node/s))
       node/s
-      (let ((head (car node/s))
-            (tail (cdr node/s)))
+      (let* ((head (car node/s))
+             (tail (cdr node/s))
+             (cvt-elt?
+               (lambda (tag #!optional (match-tag #f))
+                 (let ((parts (string-split (symbol->string tag) ":")))
+                   (and (= (length parts) 2)
+                        (or (string=? (car parts) (*civet-ns-uri*))
+                            (string=? (ctx 'pfx->uri (string->symbol (car parts)))
+                                      (*civet-ns-uri*)))
+                        (or (not match-tag)
+                            (string=? (cadr parts) match-tag))))))
+             ;; FIXME!!
+             (cvt-attr?
+               (lambda (attname) #f)))
         (cond
           ((null? head)
            (process-tree tail ctx))
