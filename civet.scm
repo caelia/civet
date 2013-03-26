@@ -626,7 +626,7 @@
          (or (not match-name)
              (string=? (cadr parts) match-name)))))
 
-;; This is the main dispatch function
+;; This is the generic dispatch function
 (define (process-tree node/s ctx)
   (let ((state (ctx 'get-state)))
     (if (or (string? node/s) (symbol? node/s) (null? node/s))
