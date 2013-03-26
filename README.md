@@ -267,11 +267,13 @@ by the processor, but may also be defined within the template (see
 
 ------------------------------------------------------------------------
 
-#### for-each
+#### for
 
 ##### Attributes:
 
-- **name** [required] Equivalent to the name attribute for `var` and `block`.
+- **each** [required] Defines the local variable name for each iteration.
+
+- **in** [required] Equivalent to the name attribute for `var` and `block`.
 
 - **sort** [optional, default=auto] The sorting method to use. May be 'alpha',
   'numeric', 'auto', or the name of a user-defined procedure. 'Auto' means
