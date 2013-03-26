@@ -5,7 +5,7 @@
 ;;;   This program is open-source software, released under the
 ;;;   BSD license. See the accompanying LICENSE file for details.
 
-(module civet
+;@ (module civet
         *
         (import scheme chicken)
         (import
@@ -28,7 +28,8 @@
         (use utf8-srfi-13)
         (use srfi-69)
         (use ssax)
-        (use sxml-transforms)
+        (use sxpath)
+        (use sxml-serializer)
         (use irregex)
 
 
@@ -69,7 +70,7 @@
     '((string . (string<? string>?))
       (char . (char<? char>?))
       (number . (< >))
-      (boolean . ((lambda (a b) (or (not a) b)) (lambda (a b) (or a (not b)))))))) 
+      (boolean . ((lambda (a b) (or (not a) b)) (lambda (a b) (or a (not b))))))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -322,7 +323,7 @@
         ((set-state!)
          (set! state (car args)))
         ((get-state)
-         state))))))
+         state)))))
 
 
 (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
@@ -379,8 +380,9 @@
 
 (define (load-template name #!optional (nsmap '()))
   (let* ((nsmap* (alist-merge (*default-nsmap*) nsmap))
-         (raw-template (make-pathname (template-path) name ext))
-         (cached-template (make-pathname (template-cache-path) name "sxml"))
+         (raw-template (make-pathname (template-path) name))
+         (sxml-name (pathname-replace-extension name "sxml"))
+         (cached-template (make-pathname (template-cache-path) sxml-name))
          (update? (update-cached-template? raw-template cached-template))
          (infile (if update? raw-template cached-template))
          (input (open-input-file infile))
@@ -415,12 +417,12 @@
       locale-data)))
 
 (define (get-template-vars template)
-  (let ((sp1 (sxpath '(cvt:template cvt:defvar) (*sxpath-nsmap*)))
+  (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*)))
         (sp2 (sxpath '(@ name *text*))))
     (map
       (lambda (def)
         (let* ((name* (sp2 def))
-               (name (string->symbol (car name))))
+               (name (string->symbol (car name*))))
           (cons name def)))
       (sp1 template))))
 
@@ -483,7 +485,7 @@
             (not (eqv? (car node) '@))))
       kids)))
 
-(define (cvt-elt? tag #!optional (match-tag #f))
+(define (cvt-elt? tag ctx #!optional (match-tag #f))
   (let ((parts (string-split (symbol->string tag) ":")))
     (and (= (length parts) 2)
          (string=? (ctx 'pfx->uri (string->symbol (car parts)))
@@ -501,7 +503,7 @@
     (if override
       (%cvt:block (get-attrs override) (get-kids override)
                   (context->context ctx -blocks: (list block-name)))
-      (process-children content))))
+      (process-tree content))))
 
 
 (define (%cvt:var attrs content ctx)
@@ -530,9 +532,9 @@
              (se content))))
     (cond
       (test-result
-        (process-children content (context->context ctx test: #t)))
+        (process-tree content (context->context ctx test: #t)))
       ((and (not test-result) else-node)
-       (process-children else-node))
+       (process-tree else-node))
       (else
         '()))))
 
@@ -574,7 +576,7 @@
                  base-sortfun)))
         (for-each
           (lambda (elt)
-            (process-children content (context->context +vars: (list (cons local-key elt)))))
+            (process-tree content (context->context +vars: (list (cons local-key elt)))))
           (sort value sortfun))))))
 
 (define (%cvt:with attrs content ctx)
@@ -583,7 +585,7 @@
     (let loop ((nodes nodes*)
                (local-vars '()))
       (if (null? nodes)
-        (process-children content (context->context +vars local-vars))
+        (process-tree content (context->context +vars local-vars))
         (let* ((defnode (car nodes))
                (var-name (get-attval defnode "name"))
                (value (or (get-attval defnode "value")
@@ -605,9 +607,58 @@
     (list
       tag
       (update-attrs attlist template-attrs)
-      (process-children content ctx))))
+      (process-tree content ctx))))
 
-(define (@* name value ctx) #f)
+(define (%@* name value ctx) #f)
+
+;; This is the main dispatch function
+(define (process-tree node/s ctx)
+  (let ((state (ctx 'get-state)))
+    (if (or (string? node/s) (symbol? node/s) (null? node/s))
+      node/s
+      (let ((head (car node/s))
+            (tail (cdr node/s)))
+        (cond
+          ((null? head)
+           (process-tree tail ctx))
+          ((string? head)
+           (cons head (process-tree tail ctx)))
+          ((list? head)
+            (map
+              (lambda (node) (process-tree node ctx))
+              node/s))
+          ((cvt-elt? head 'template)
+           (assert (eqv? state 'init))
+           (process-tree tail (context->context ctx state: 'template)))
+          ((cvt-elt? head 'block)
+           (assert (not (or (eqv? state 'init) (eqv? state 'block) (eqv? state 'head))))
+           (process-tree tail (context->context ctx state: 'block)))
+          ((cvt-elt? head 'head)
+           (assert (eqv? state 'template))
+           (process-tree tail (context->context ctx state: 'head)))
+          ((cvt-elt? head 'locale) (%cvt:locale node/s ctx))
+          ((cvt-elt? head 'defvar) (%cvt:defvar node/s ctx))
+          ((cvt-elt? head 'var) (%cvt:var node/s ctx))
+          ((cvt-elt? head 'attr) (%cvt:attr node/s ctx))
+          ((cvt-elt? head 'with) (%cvt:with node/s ctx))
+          ((cvt-elt? head 'if) (%cvt:if node/s ctx))
+          ((cvt-elt? head 'else) (%cvt:else node/s ctx))
+          ((cvt-elt? head 'for) (%cvt:for node/s ctx))
+          ((cvt-attr? head) (%cvt:@* node/s ctx))
+          ((eqv? head '@) (%@* tail ctx))
+          ((or (eqv? head '*TOP*)
+               (eqv? head '*PI*)
+               (eqv? head '*NAMESPACES*))
+           (cons head (process-tree (cdr node/s))))
+          ((symbol? head)
+           (let ((ctx*
+                   (if (eqv? state 'init)
+                     (context->context ctx state: 'template)
+                     ctx)))
+             (cons head (process-tree (cdr node/s)))))
+          (else
+            (eprintf "Node not handled: ~A\n" head)))))))
+
 
 (define (process-content content ctx)
   ;; content = any content nodes not processed by higher-level handlers
@@ -671,7 +722,7 @@
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
-) ; END MODULE
+;@ ) ; END MODULE
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ------------------------------------------------------------------------
