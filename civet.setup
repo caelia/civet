@@ -1,0 +1,6 @@
+(compile -O -s civet.scm -j civet)
+(compile -O -s civet.import.scm)
+(install-extension
+  'civet
+  '("civet.so" "civet.import.so")
+  '((version "0.1")))
