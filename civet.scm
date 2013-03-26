@@ -598,7 +598,14 @@
 
 (define (%cvt:* attrs content ctx) #f)
 
-(define (%* attrs content ctx) #f)
+(define (%* tag attrs content ctx)
+  (let* ((attlist (process-attrs attrs ctx))
+         (ta-exp (sxpath '(cvt:attr)))
+         (template-attrs (ta-exp content)))
+    (list
+      tag
+      (update-attrs attlist template-attrs)
+      (process-children content ctx))))
 
 (define (@* name value ctx) #f)
 
