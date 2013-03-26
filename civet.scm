@@ -64,6 +64,13 @@
         (cons '*default* (cdar default-map))
         (cdr default-map)))))
 
+(define *sort-functions*
+  (make-parameter
+    '((string . (string<? string>?))
+      (char . (char<? char>?))
+      (number . (< >))
+      (boolean . ((lambda (a b) (or (not a) b)) (lambda (a b) (or a (not b)))))))) 
+
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
@@ -114,12 +121,6 @@
               (loop rest out)
               (loop rest (cons elt out)))))))))
     
-(define (get-var name)
-  (hash-table-ref (*template-vars*) name))
-
-(define (clear-template-vars)
-  (hash-table-clear! (*template-vars*)))
-
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
@@ -185,9 +186,9 @@
                       (or (=> rhs-var (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
                           (=> rhs-qstring (or (: #\' (=> qstring-val (* any)) #\')
                                           (: #\\ #\" (=> qstring-val (* any)) #\\ #\")))
-                          (=> rhs-number (or (+ numeric)
-                                             (: (* numeric) #\. (+ numeric))))))
-                   (: (=> func (or (=> lt "lt") (=> gt "gt") (=> le "le") (=> ge "ge")))
+                          (=> rhs-num (or (+ numeric)
+                                          (: (* numeric) #\. (+ numeric))))))
+                   (: (=> func (or "lt" "gt" "le" "ge"))
                       (* space) #\( (* space)
                       (=> arg1 (: (or alpha #\_) (+ (or alphanum ("_-:.")))))
                       (* space) #\, (* space)
@@ -217,13 +218,13 @@
                       (else (eprintf "BUG: Relation is neither '=' nor '!='?!\n"))))
                   (rhs-value
                     (let ((rhs-var (ims m 'rhs-var))
-                          (rhs-number (ims m 'rhs-number))
+                          (rhs-num (ims m 'rhs-num))
                           (rhs-qstring (ims m 'rhs-qstring)))
                       (cond
                         (rhs-var (get-var rhs-var))
-                        (rhs-number (string->number rhs-number))
+                        (rhs-num (string->number rhs-num))
                         (rhs-qstring (ims m 'qstring-val))
-                        (else (eprintf "BUG: rhs failed to match rhs-var, rhs-number, or rhs-qstring.\n"))))))
+                        (else (eprintf "BUG: rhs failed to match rhs-var, rhs-num, or rhs-qstring.\n"))))))
               (test lhs-value rhs-value)))
           (func
             (let ((test
@@ -241,10 +242,8 @@
                         (arg2-var (get-var arg2-var))
                         (arg2-num (string->number arg2-num))
                         (else (eprintf "Error: invalid argument to function '~A'\n" func))))))
-              (test arg1 arg2))))))))
-
-
-      (eprintf "Invalid test expression: '~A'\n" test-expr)
+              (test arg1 arg2)))))
+      (eprintf "Invalid test expression: '~A'\n" test-expr))))
       
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -277,6 +276,10 @@
          (set! vars args))
         ((get-vars)
          vars)
+        ((get-field)
+         (let ((obj (alist-ref (car args) vars)))
+           (and obj
+                (alist-ref (cadr args) obj))))
         ((pfx->uri)
          (alist-ref (car args) nsmap))
         ((uri->pfx)
@@ -503,7 +506,12 @@
 
 (define (%cvt:var attrs content ctx)
   (let* ((var-name (get-attval attrs "name"))
-         (value (ctx 'get-var var-name))
+         (obj+field (string-split var-name "."))
+         (value
+           (if (= (length obj+field) 2)
+             (ctx 'get-field (car obj+field) (cadr obj+field))
+             (ctx 'get-var var-name)))
+         (var-type (get-attval attrs "type" "string"))
          (req-str (get-attval attrs "required"))
          (required (or (not req-str)
                        (string->bool req-str))))
@@ -513,14 +521,6 @@
       ((value) value)
       (else '()))))
 
-(define (%cvt:object attrs content ctx) #f)
-  (let* ((obj-name (get-attval attrs "name"))
-         (value (ctx 'get-var var-name))
-         (req-str (get-attval attrs "required"))
-         (required (or (not req-str)
-                       (string->bool req-str))))
-
-(define (%cvt:field attrs content ctx) #f)
 
 (define (%cvt:if attrs content ctx)
   (let* ((test-expr (get-attval attrs "test"))
@@ -536,11 +536,61 @@
       (else
         '()))))
 
-(define (%cvt:else attrs content ctx) #f)
+(define (%cvt:else attrs content ctx)
+  '())
 
-(define (%cvt:for-each attrs content ctx) #f)
 
-(define (%cvt:with attrs content ctx) #f)
+(define (register-sort-fun type asc desc)
+  (*sort-functions*
+    (alist-update type (list asc desc) (*sort-functions*))))
+
+(define (sort-fun type order)
+  (let ((type-funs (alist-ref type (*sort-functions*))))
+    (cond
+      ((not type-funs) (eprintf "No sort function for data type '~A'.\n" type))
+      ((eqv? order 'asc) (car type-funs))
+      (else (cadr type-funs)))))
+
+(define (%cvt:for attrs content ctx)
+  (let* ((var-name (get-attval attrs "in"))
+         (value (ctx 'get-var var-name)))
+    (if value
+      (let* ((local-key (string->symbol (get-attval attrs "each")))
+             (type (get-attval attrs "type" "string"))
+             (sort-type (string->symbol (get-attval attrs "sort" "auto")))
+             (sort-field (get-attval attrs "sort-field"))
+             (order (string->symbol (get-attval attrs "order" "asc")))
+             (base-sortfun
+               (case sort-type
+                 ((alpha) (if (eqv? order 'asc) string<? string>?))
+                 ((numeric) (if (eqv? order 'asc) < >))
+                 ((auto) (sort-fun type order))))
+             (sortfun
+               (if sort-field
+                 (lambda (ox oy)
+                   (let ((fx (alist-ref sort-field ox))
+                         (fy (alist-ref sort-field oy)))
+                     (base-sortfun fx fy)))
+                 base-sortfun)))
+        (for-each
+          (lambda (elt)
+            (process-children content (context->context +vars: (list (cons local-key elt)))))
+          (sort value sortfun))))))
+
+(define (%cvt:with attrs content ctx)
+  (let* ((se (sxpath '(defvar) (*sxpath-nsmap*)))
+         (nodes* (se content)))
+    (let loop ((nodes nodes*)
+               (local-vars '()))
+      (if (null? nodes)
+        (process-children content (context->context +vars local-vars))
+        (let* ((defnode (car nodes))
+               (var-name (get-attval defnode "name"))
+               (value (or (get-attval defnode "value")
+                          (get-kids defnode))))
+          (loop
+            (cdr nodes)
+            (cons (cons (string->symbol var-name) value) local-vars)))))))
 
 (define (%cvt:defvar attrs content ctx) #f)
 
