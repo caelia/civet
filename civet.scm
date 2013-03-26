@@ -121,6 +121,23 @@
             (if (memv (car elt) -keys)
               (loop rest out)
               (loop rest (cons elt out)))))))))
+
+(define (update-attrs attrs1 attrs2)
+  (cond
+    ((null? attrs1) attrs2)
+    ((null? attrs2) attrs1)
+    (else
+      (let ((delete-dups
+              (lambda (keys lst)
+                (filter
+                  (lambda (elt)
+                    (not (member (car elt) keys)))
+                  lst)))
+            (keys
+              (map
+                (lambda (elt) (car elt))
+                attrs2)))
+        (append (delete-dups keys attrs1) attrs2)))))
     
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -350,27 +367,6 @@
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE SETS  ---------------------------------------------------
 
-(define (make-block+context block vars locale)
-  (lambda (cmd)
-    (case cmd
-      ((block) block)
-      ((vars) vars)
-      ((locale) locale))))
-
-(define (make-template-set
-          #!key (templates '()) (vars '()) (blocks '()) (block-index '()))
-  (lambda (cmd . args)
-    (case cmd
-      ((add-template-vars)
-       (alist-update! (car args) (cadr args) template-vars))
-      ((add-template-locale)
-       (alist-update! (car args) (cadr args) template-locales))
-      ((add-block)
-       (alist-update! (car args) (cadr args) blocks))
-      ((get-block)
-       (alist-ref (car args) vars)))))
-
-
 (define (update-cached-template? raw-path cached-path)
   (or (not (file-exists? raw-path))
       (not (file-exists? cached-path))
@@ -518,7 +514,7 @@
 
 (define (%cvt:if attrs content ctx)
   (let* ((test-expr (get-attval attrs "test"))
-         (test-result (eval-test text-expr ctx))
+         (test-result (eval-test test-expr ctx))
          (else-node
            (let ((se (sxpath '(cvt:else) (*sxpath-nsmap*))))
              (se content))))
@@ -577,7 +573,7 @@
     (let loop ((nodes nodes*)
                (local-vars '()))
       (if (null? nodes)
-        (process-tree content (context->context +vars local-vars))
+        (process-tree content (context->context +vars: local-vars))
         (let* ((defnode (car nodes))
                (var-name (get-attval defnode "name"))
                (value (or (get-attval defnode "value")
@@ -602,6 +598,18 @@
       (process-tree content ctx))))
 
 (define (%@* name value ctx) #f)
+
+;; FIXME!!
+(define (%cvt:@ attr ctx)
+  attr)
+
+(define (process-attrs attrs ctx)
+  (map
+    (lambda (attr)
+      (if (cvt-attr? attr)
+        (%cvt:@ attr)
+        attr))
+    attrs))
 
 ;; This is the main dispatch function
 (define (process-tree node/s ctx)
@@ -715,8 +723,8 @@
 
 
 (define (process-template-set name context)
-  (let-values (((template block-data) (build-template-set template-name nsmap)))
-    (process-template template blocks context nsmap)))
+  (let-values (((template block-data) (build-template-set name (context 'get-nsmap))))
+    (process-template template block-data context)))
 
 (define (render template-name context #!key (port #f) (file #f) (nsmap '()))
   (let ((final-tree (process-template-set template-name context)))
