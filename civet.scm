@@ -124,6 +124,7 @@
 
 (define (update-attrs attrs1 attrs2)
   (cond
+    ((and (null? attrs1) (null? attrs2) #f))
     ((null? attrs1) attrs2)
     ((null? attrs2) attrs1)
     (else
@@ -590,34 +591,66 @@
 
 (define (%cvt:locale attrs content ctx) #f)
 
-(define (%cvt:attr attrs content ctx) #f)
+;; FIXME: seems like there should be a more efficient way to
+;;   get the value of a child element
+(define (%cvt:attr elt ctx)
+  (let* ((name-exp (sxpath '(@name *text*) (*sxpath-nsmap*)))
+         (val-exp (sxpath '(@value *text*) (*sxpath-nsmap*)))
+         (type-exp (sxpath '(@type *text*) (*sxpath-nsmap*)))
+         (fmt-exp (sxpath '(@format *text*) (*sxpath-nsmap*)))
+         (if-exp (sxpath '(cvt:if) (*sxpath-nsmap*)))
+         (var-exp (sxpath '(cvt:var) (*sxpath-nsmap*)))
+         (txt-exp (sxpath '(*text*) (*sxpath-nsmap*)))
+         (name (name-exp elt))
+         (if-child (if-exp elt))
+         (var-child (var-exp elt))
+         (txt-child (txt-exp elt))
+         (child-value
+           (cond
+             (if-child (%cvt:if if-child))
+             (var-child (%cvt:var var-child)) 
+             (txt-child txt-child)
+             (else #f)))
+         (value (or child-value (val-exp elt))))
+    ;; FIXME: This simply uses the raw string value of the attribute,
+    ;;   no accounting for type or format
+    (list name value))) 
 
-(define (%cvt:* attrs content ctx) #f)
+;; Apparently there are no unknown cvt: elements, but I'll keep this
+;;   for the time being, just in case.
+; (define (%cvt:* attrs content ctx) #f)
 
 (define (%* element ctx)
-  (let* ((al-exp (sxpath '((@ 1)) (*sxml-nsmap*)))
-         (att-node (al-exp element)) 
-         (att-list (cdar att-node))
-         (ta-exp (sxpath '(cvt:attr) (*sxml-nsmap*)))
-         (template-attrs (ta-exp content)))
-    (list
-      tag
-      (update-attrs attlist template-attrs)
-      (process-tree content ctx))))
+  (let* ((tag (car element))
+         (kids (cdr element))
+         (al-exp (sxpath '(@ *) (*sxpath-nsmap*)))
+         ; (att-node (al-exp element)) 
+         ; (att-list (cdar att-node))
+         (att-list* (al-exp element))
+         (att-list (map (lambda (attr) (%@* attr ctx)) att-list*))
+         (ta-exp (sxpath '(cvt:attr) (*sxpath-nsmap*)))
+         (template-attrs (ta-exp element))
+         (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
+         (final-attvals (update-attrs att-list template-attvals)))
+    (if final-attvals
+      (cons
+        tag
+        (cons
+          (list '@ final-attvals)
+          (process-tree kids ctx)))
+      (cons
+        tag
+        (process-tree kids ctx)))))
 
-(define (%@* name value ctx) #f)
-
-;; FIXME!!
-(define (%cvt:@ attr ctx)
-  attr)
-
-(define (process-attrs attrs ctx)
-  (map
-    (lambda (attr)
-      (if (cvt-name? attr ctx)
-        (%cvt:@ attr)
-        attr))
-    attrs))
+(define (%@* attr ctx)
+  (let* ((name (car attr))
+         (value* (cadr attr))
+         (cvtname (cvt-name? name ctx))
+         (value
+           (if cvtname
+             (ctx 'get-var value*)
+             value*)))
+    (list name value)))
 
 (define (cvt-name? qname ctx #!optional (match-name #f))
   (let ((parts (string-split (symbol->string qname) ":")))
@@ -626,7 +659,8 @@
              (string=? (ctx 'pfx->uri (string->symbol (car parts)))
                        (*civet-ns-uri*)))
          (or (not match-name)
-             (string=? (cadr parts) match-name)))))
+             (string=? (cadr parts) match-name))
+         (cadr parts))))
 
 ;; This is the generic dispatch function
 (define (process-tree node/s ctx)
@@ -707,7 +741,7 @@
   ;;
   #f)
 
-(define (process-template template block-data context)
+(define (process-base-template template block-data context)
   ;; template = entire base template SXML
   ;; block-data = alist of blocks
   ;; context = as provided by app
@@ -719,12 +753,31 @@
   ;; 5. return complete tree
   ;;
   ;; Probably best to use SXPath to extract first head, then rest of body.
-  #f)
-
+  (let ((head (car template))
+        (tail (cdr template)))
+    (cond
+      ((list? head)
+       (map
+         (lambda (node)
+           (process-base-template node block-data context))
+         template))
+      ((eqv? head '*TOP*)
+       (cons head (process-base-template template block-data context)))
+      ((or (eqv? head '*PI*)
+           (eqv? head '*NAMESPACES*)
+           (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
+           (eqv? head '@))
+       (cons head (process-tree tail context)))
+      ((cvt-name? head)
+       (eprintf "The document element of the base template is '~A', which is invalid."))
+      (else
+        (assert (eqv? (context 'get-state) 'init))
+        (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
+          (cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
   (let-values (((template block-data) (build-template-set name (context 'get-nsmap))))
-    (process-template template block-data context)))
+    (process-base-template template block-data context)))
 
 (define (render template-name context #!key (port #f) (file #f) (nsmap '()))
   (let ((final-tree (process-template-set template-name context)))
