@@ -594,9 +594,11 @@
 
 (define (%cvt:* attrs content ctx) #f)
 
-(define (%* tag attrs content ctx)
-  (let* ((attlist (process-attrs attrs ctx))
-         (ta-exp (sxpath '(cvt:attr)))
+(define (%* element ctx)
+  (let* ((al-exp (sxpath '((@ 1)) (*sxml-nsmap*)))
+         (att-node (al-exp element)) 
+         (att-list (cdar att-node))
+         (ta-exp (sxpath '(cvt:attr) (*sxml-nsmap*)))
          (template-attrs (ta-exp content)))
     (list
       tag
@@ -642,34 +644,30 @@
             (map
               (lambda (node) (process-tree node ctx))
               node/s))
+          ;; cvt:template should have been handled already by build-template-set
           ((cvt-name? head ctx "template")
-           (assert (eqv? state 'init))
-           (process-tree tail (context->context ctx state: 'template)))
-          ((cvt-name? head ctx "block")
-           (assert (not (or (eqv? state 'init) (eqv? state 'block) (eqv? state 'head))))
-           (process-tree tail (context->context ctx state: 'block)))
-          ((cvt-name? head ctx "head")
-           (assert (eqv? state 'template))
-           (process-tree tail (context->context ctx state: 'head)))
-          ((cvt-name? head ctx "locale") (%cvt:locale node/s ctx))
-          ((cvt-name? head ctx "defvar") (%cvt:defvar node/s ctx))
-          ((cvt-name? head ctx "var") (%cvt:var node/s ctx))
-          ((cvt-name? head ctx "attr") (%cvt:attr node/s ctx))
-          ((cvt-name? head ctx "with") (%cvt:with node/s ctx))
-          ((cvt-name? head ctx "if") (%cvt:if node/s ctx))
-          ((cvt-name? head ctx "else") (%cvt:else node/s ctx))
-          ((cvt-name? head ctx "for") (%cvt:for node/s ctx))
-          ((eqv? head '@) (%@* tail ctx))
+           (eprintf "The <cvt:template> element cannot occur in a base template"))
+          ((cvt-name? head ctx "block") (%cvt:block tail ctx)) 
+          ;; cvt:head should already have been handled in build-template-set or
+          ;;   by the handler for the document element
+          ((cvt-name? head ctx "head") '())
+          ((cvt-name? head ctx "locale") (%cvt:locale tail ctx))
+          ((cvt-name? head ctx "defvar") (%cvt:defvar tail ctx))
+          ((cvt-name? head ctx "var") (%cvt:var tail ctx))
+          ;; cvt:attr should be handled in the handler for its parent element
+          ((cvt-name? head ctx "attr") '())
+          ((cvt-name? head ctx "with") (%cvt:with tail ctx))
+          ((cvt-name? head ctx "if") (%cvt:if tail ctx))
+          ;; cvt:else should already be handled by the %cvt:if handler
+          ((cvt-name? head ctx "else") '())
+          ((cvt-name? head ctx "for") (%cvt:for tail ctx))
+          ;; attributes are handled by the handler for their element
+          ((eqv? head '@) '())
           ((or (eqv? head '*TOP*)
                (eqv? head '*PI*)
                (eqv? head '*NAMESPACES*))
            (cons head (process-tree (cdr node/s))))
-          ((symbol? head)
-           (let ((ctx*
-                   (if (eqv? state 'init)
-                     (context->context ctx state: 'template)
-                     ctx)))
-             (cons head (process-tree (cdr node/s)))))
+          ((symbol? head) (%* node/s ctx))
           (else
             (eprintf "Node not handled: ~A\n" head)))))))
 
