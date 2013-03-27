@@ -762,7 +762,7 @@
            (process-base-template node block-data context))
          template))
       ((eqv? head '*TOP*)
-       (cons head (process-base-template template block-data context)))
+       (cons head (process-base-template tail block-data context)))
       ((or (eqv? head '*PI*)
            (eqv? head '*NAMESPACES*)
            (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
