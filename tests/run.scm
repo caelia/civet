@@ -165,7 +165,7 @@ XML
                 nsmap: '((#f . "http://www.w3.org/1999/xhtml")
                          (cvt . "http://xmlns.therebetygers.net/civet/0.1"))
                 vars:  '((color . "lime") (size . "12") (age . "27")
-                         (divclass . "") (divid . "") (chapeau . "porkpie"))))
+                         (divclass . "Poinsettia") (divid . "baz451") (chapeau . "porkpie"))))
 
 (define doc-tr1-3-in
 '(*TOP*
@@ -281,12 +281,7 @@ XML
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
-           (cvt:if
-             (@ (test "color"))
-             (p "12")
-             (cvt:else
-               (div (@ (id "age-div") (class "info"))
-                    "27")))))))
+           (p "12")))))
 
 (define doc-tr1-9-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")

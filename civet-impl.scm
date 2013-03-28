@@ -658,12 +658,12 @@
 (define (%@* attr ctx)
   (let* ((name (car attr))
          (value* (cadr attr))
-         (cvtname (cvt-name? name ctx))
+         (localname (cvt-name? name ctx))
          (value
-           (if cvtname
-             (ctx 'get-var value*)
+           (if localname
+             (ctx 'get-var (string->symbol value*))
              value*)))
-    (list name value)))
+    (list localname value)))
 
 (define (cvt-name? qname ctx)
   (and qname
@@ -676,8 +676,6 @@
 
 ;; This is the generic dispatch function
 (define (process-tree tree ctx)
-  (print "\nPROCESS-TREE:")
-  (pp tree)
   (let ((state (ctx 'get-state)))
     (cond
       ((null? tree) #f)
@@ -691,11 +689,13 @@
             ((string? head)
              (cons head (process-tree tail ctx)))
             ((list? head)
-             (filter
-               identity
-               (map
-                 (lambda (node) (process-tree node ctx))
-                 tree)))
+             (let ((head* (process-tree head ctx))
+                   (tail* (process-tree tail ctx)))
+               (cond
+                 ((and head* tail*) (cons head* tail*))
+                 (head* head*)
+                 (tail* tail*)
+                 (else #f))))
             (else
               (let ((cvt-localname (cvt-name? head ctx)))
                 (if cvt-localname
