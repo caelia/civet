@@ -136,6 +136,30 @@
                 attrs2)))
         (append (delete-dups keys attrs1) attrs2)))))
     
+;; This is just for debugging purposes
+(define (describe-tree t)
+  (newline)
+  (display "[TREE]> ")
+  (print
+    (cond
+      ((null? t) "<NULL>")
+      ((string? t) "<STRING>")
+      ((symbol? t) "<SYMBOL>")
+      ((list? t)
+       (let ((head (car t))
+             (tail (cdr t)))
+         (string-append "("
+                        (if (list? head)
+                          "<LIST>"
+                          (sprintf "~A" head))
+                        " "
+                        (cond
+                          ((null? tail) "<NULL>")
+                          ((string? tail) "<STRING>")
+                          ((symbol? tail) "<SYMBOL>")
+                          ((list? tail) "<LIST>"))
+                        ")"))))))
+
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
@@ -645,24 +669,27 @@
          (template-attrs (ta-exp element))
          (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
          (final-attvals (update-attrs att-list template-attvals)))
+    (printf "[att-list*]> ~A\n" att-list*)
+    (printf "[att-list]> ~A\n" att-list)
     (if final-attvals
       (cons
         tag
         (cons
-          (list '@ final-attvals)
+          (cons '@ final-attvals)
           (process-tree kids ctx)))
       (cons
         tag
         (process-tree kids ctx)))))
 
 (define (%@* attr ctx)
-  (let* ((name (car attr))
+  (let* ((name* (car attr))
          (value* (cadr attr))
-         (cvtname (cvt-name? name ctx))
+         (localname (cvt-name? name* ctx))
          (value
-           (if cvtname
-             (ctx 'get-var value*)
-             value*)))
+           (if localname
+             (ctx 'get-var (string->symbol value*))
+             value*))
+         (name (or (and localname (string->symbol localname)) name*)))
     (list name value)))
 
 (define (cvt-name? qname ctx)
@@ -676,8 +703,7 @@
 
 ;; This is the generic dispatch function
 (define (process-tree tree ctx)
-  (print "\nPROCESS-TREE:")
-  (pp tree)
+  ; (describe-tree tree)
   (let ((state (ctx 'get-state)))
     (if (or (string? tree) (symbol? tree) (null? tree))
       tree
