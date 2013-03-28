@@ -65,18 +65,6 @@ XML
 
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
-;;; ----  UTILITY FUNCTIONS  -----------------------------------------------
-
-
-;;; ------------------------------------------------------------------------
-
-;;; ========================================================================
-;;; ------  Run tests  -----------------------------------------------------
-
-;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-
-
-;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  CONTEXT OBJECTS  -------------------------------------------------
 
 (define ctx01
@@ -97,24 +85,8 @@ XML
 ;;; ------  Run tests  -----------------------------------------------------
 
 (test-group "Context Objects"
-  (test "Retrieve a variable" #\L (ctx01 'get-var 'louise)))
-
-;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-
-
-
-;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
-;;; ----  EXPRESSION LANGUAGE  ---------------------------------------------
-
-(test-group "Expression Language"
-  (test "Integer variable = integer constant  [#t]" #t (eval-test "aardvark = 219" ctx01))
-  (test "Integer variable = float constant    [#t]" #t (eval-test "aardvark = 219.0" ctx01))
-  (test "Integer variable = integer variable  [#t]" #t (eval-test "aardvark = finch" ctx01))
-  (test "Integer variable = float variable    [#t]" #t (eval-test "aardvark = behemoth" ctx01))
-  (test "Integer variable != integer constant [#t]" #t (eval-test "aardvark != 500" ctx01))
-  (test "Integer variable != float constant   [#t]" #t (eval-test "aardvark != 219.1" ctx01))
-  (test "Integer variable != integer variable [#t]" #t (eval-test "aardvark != gastropod" ctx01))
-  (test "Integer variable != float variable   [#t]" #t (eval-test "gastropod != helium" ctx01)))
+  (test "Retrieve a variable" #\L (ctx01 'get-var 'louise))
+  (test "Check the current state" 'init (ctx01 'get-state)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -188,6 +160,171 @@ XML
        (body
          (p "green")))))
 
+(define ctx-tr1-3
+  (make-context state: 'init
+                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
+                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))
+                vars:  '((color . "lime") (size . "12") (age . "27")
+                         (divclass . "") (divid . "") (chapeau . "porkpie"))))
+
+(define doc-tr1-3-in
+'(*TOP*
+   (@ (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             "12")))))
+
+(define doc-tr1-3-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body "12"))))
+
+(define doc-tr1-4-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "bolour"))
+             "12"
+             (cvt:else "27"))))))
+
+(define doc-tr1-4-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body "27"))))
+
+(define doc-tr1-5-in
+'(*TOP*
+   (@ (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             (cvt:var (@ (name "size"))))))))
+
+(define doc-tr1-5-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body "12"))))
+
+(define doc-tr1-6-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "bolour"))
+             (cvt:var (@ (name "size")))
+             (cvt:else
+               (cvt:var (@ (name "age")))))))))
+
+(define doc-tr1-6-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body "27"))))
+
+(define doc-tr1-7-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             (p (cvt:var (@ (name "size")))))))))
+
+(define doc-tr1-7-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             (p "12"))))))
+
+(define doc-tr1-8-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             (p (cvt:var (@ (name "size"))))
+             (cvt:else
+               (div (@ (id "age-div") (class "info"))
+                    (cvt:var (@ (name "age"))))))))))
+
+(define doc-tr1-8-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (cvt:if
+             (@ (test "color"))
+             (p "12")
+             (cvt:else
+               (div (@ (id "age-div") (class "info"))
+                    "27")))))))
+
+(define doc-tr1-9-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body (div (@ (cvt:class "divclass")) "Div Contents")))))
+
+(define doc-tr1-9-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body (div (@ (class "Poinsettia")) "Div Contents")))))
+
+(define doc-tr1-10-in
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (div
+             (@ (id "fubar79") (class "Poinsettia"))
+             (cvt:attr (@ (name "id"))
+                       (cvt:var (@ (name "divid"))))
+             (cvt:attr (@ (value "fedora") (name "chapeau")))
+             "Div Contents")))))
+
+(define doc-tr1-10-out
+'(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body
+           (div
+             (@ (id "baz451") (class "Poinsettia") (chapeau "fedora"))
+             "Div Contents")))))
+
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
@@ -203,7 +340,39 @@ XML
   (test
     "TR1.03: Basic string variable substitution"
     doc-tr1-2-out
-    (process-base-template doc-tr1-2-in '() ctx-tr1-1)))
+    (process-base-template doc-tr1-2-in '() ctx-tr1-1))
+  (test
+    "TR1.04: cvt:if, no else clause, literal string"
+    doc-tr1-3-out
+    (process-base-template doc-tr1-3-in '() ctx-tr1-3))
+  (test
+    "TR1.05: cvt:if + else clause, literal string"
+    doc-tr1-4-out
+    (process-base-template doc-tr1-4-in '() ctx-tr1-3))
+  (test
+    "TR1.06: cvt:if, no else clause, string variable only"
+    doc-tr1-5-out
+    (process-base-template doc-tr1-5-in '() ctx-tr1-3))
+  (test
+    "TR1.07: cvt:if + else clause, string variable only"
+    doc-tr1-6-out
+    (process-base-template doc-tr1-6-in '() ctx-tr1-3))
+  (test
+    "TR1.08: cvt:if, no else clause, string var in literal element"
+    doc-tr1-7-out
+    (process-base-template doc-tr1-7-in '() ctx-tr1-3))
+  (test
+    "TR1.09: cvt:if + else clause, string var in literal element"
+    doc-tr1-8-out
+    (process-base-template doc-tr1-8-in '() ctx-tr1-3))
+  (test
+    "TR1.10: direct attribute substitution"
+    doc-tr1-9-out
+    (process-base-template doc-tr1-9-in '() ctx-tr1-3))
+  (test
+    "TR1.11: attribute substitution using cvt:attr elements"
+    doc-tr1-10-out
+    (process-base-template doc-tr1-10-in '() ctx-tr1-3)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
