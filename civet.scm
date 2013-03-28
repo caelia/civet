@@ -124,7 +124,7 @@
 
 (define (update-attrs attrs1 attrs2)
   (cond
-    ((and (null? attrs1) (null? attrs2) #f))
+    ((and (null? attrs1) (null? attrs2)) #f)
     ((null? attrs1) attrs2)
     ((null? attrs2) attrs1)
     (else
@@ -460,14 +460,19 @@
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  XML PROCESSING  --------------------------------------------------
 
-(define (get-attrs attlist)
-  (let ((se '(sxpath (@))))
-    (se attlist)))
+(define (get-attrs element)
+  (let* ((se (sxpath '(@)))
+         (result (se element)))
+    (and (not (null? result))
+         (car result))))
 
 ; input is the entire attributes node: '(@ ((name value) ...))`
-(define (get-attval attlist name)
-  (let ((se '(sxpath (name *text*))))
-    (se attlist)))
+(define (get-attval attlist name #!optional (default #f))
+  (let* ((se (sxpath `(,name *text*)))
+         (result (se attlist)))
+    (or (and (not (null? result))
+             (car result))
+        default)))
 
 (define (get-kids node #!optional (nsmap #f))
   (let* ((default-nsmap (*sxpath-nsmap*))
@@ -496,24 +501,25 @@
     (if override
       (%cvt:block (get-attrs override) (get-kids override)
                   (context->context ctx -blocks: (list block-name)))
-      (process-tree content))))
+      (process-tree content (context->context ctx state: 'block)))))
 
 
-(define (%cvt:var attrs content ctx)
-  (let* ((var-name (get-attval attrs "name"))
+(define (%cvt:var elt ctx)
+  (let* ((attrs (get-attrs elt))
+         (var-name (get-attval attrs 'name))
          (obj+field (string-split var-name "."))
          (value
            (if (= (length obj+field) 2)
              (ctx 'get-field (car obj+field) (cadr obj+field))
-             (ctx 'get-var var-name)))
-         (var-type (get-attval attrs "type" "string"))
-         (req-str (get-attval attrs "required"))
+             (ctx 'get-var (string->symbol var-name))))
+         (var-type (get-attval attrs 'type "string"))
+         (req-str (get-attval attrs 'required))
          (required (or (not req-str)
                        (string->bool req-str))))
     (cond
       ((and required (not value))
        (eprintf "No value provided for required variable '~A'\n." var-name))
-      ((value) value)
+      (value value)
       (else '()))))
 
 
@@ -527,7 +533,7 @@
       (test-result
         (process-tree content (context->context ctx test: #t)))
       ((and (not test-result) else-node)
-       (process-tree else-node))
+       (process-tree else-node ctx))
       (else
         '()))))
 
@@ -607,8 +613,8 @@
          (txt-child (txt-exp elt))
          (child-value
            (cond
-             (if-child (%cvt:if if-child))
-             (var-child (%cvt:var var-child)) 
+             (if-child (%cvt:if if-child ctx))
+             (var-child (%cvt:var var-child ctx)) 
              (txt-child txt-child)
              (else #f)))
          (value (or child-value (val-exp elt))))
@@ -652,23 +658,22 @@
              value*)))
     (list name value)))
 
-(define (cvt-name? qname ctx #!optional (match-name #f))
-  (let ((parts (string-split (symbol->string qname) ":")))
-    (and (= (length parts) 2)
-         (or (string=? (car parts) (*civet-ns-uri*))
-             (string=? (ctx 'pfx->uri (string->symbol (car parts)))
-                       (*civet-ns-uri*)))
-         (or (not match-name)
-             (string=? (cadr parts) match-name))
-         (cadr parts))))
+(define (cvt-name? qname ctx)
+  (and qname
+    (let ((parts (string-split (symbol->string qname) ":")))
+      (and (= (length parts) 2)
+           (or (string=? (car parts) (*civet-ns-uri*))
+               (string=? (ctx 'pfx->uri (string->symbol (car parts)))
+                         (*civet-ns-uri*)))
+           (cadr parts)))))
 
 ;; This is the generic dispatch function
-(define (process-tree node/s ctx)
+(define (process-tree tree ctx)
   (let ((state (ctx 'get-state)))
-    (if (or (string? node/s) (symbol? node/s) (null? node/s))
-      node/s
-      (let* ((head (car node/s))
-             (tail (cdr node/s)))
+    (if (or (string? tree) (symbol? tree) (null? tree))
+      tree
+      (let* ((head (car tree))
+             (tail (cdr tree)))
         (cond
           ((null? head)
            (process-tree tail ctx))
@@ -677,33 +682,40 @@
           ((list? head)
             (map
               (lambda (node) (process-tree node ctx))
-              node/s))
-          ;; cvt:template should have been handled already by build-template-set
-          ((cvt-name? head ctx "template")
-           (eprintf "The <cvt:template> element cannot occur in a base template"))
-          ((cvt-name? head ctx "block") (%cvt:block tail ctx)) 
-          ;; cvt:head should already have been handled in build-template-set or
-          ;;   by the handler for the document element
-          ((cvt-name? head ctx "head") '())
-          ((cvt-name? head ctx "locale") (%cvt:locale tail ctx))
-          ((cvt-name? head ctx "defvar") (%cvt:defvar tail ctx))
-          ((cvt-name? head ctx "var") (%cvt:var tail ctx))
-          ;; cvt:attr should be handled in the handler for its parent element
-          ((cvt-name? head ctx "attr") '())
-          ((cvt-name? head ctx "with") (%cvt:with tail ctx))
-          ((cvt-name? head ctx "if") (%cvt:if tail ctx))
-          ;; cvt:else should already be handled by the %cvt:if handler
-          ((cvt-name? head ctx "else") '())
-          ((cvt-name? head ctx "for") (%cvt:for tail ctx))
-          ;; attributes are handled by the handler for their element
-          ((eqv? head '@) '())
-          ((or (eqv? head '*TOP*)
-               (eqv? head '*PI*)
-               (eqv? head '*NAMESPACES*))
-           (cons head (process-tree (cdr node/s))))
-          ((symbol? head) (%* node/s ctx))
+              tree))
           (else
-            (eprintf "Node not handled: ~A\n" head)))))))
+            (let ((cvt-localname (cvt-name? head ctx)))
+              (if cvt-localname
+                ;; cvt:template should have been handled already by build-template-set
+                (case (string->symbol cvt-localname)
+                  ((template)
+                   (eprintf "The <cvt:template> element cannot occur in a base template"))
+                  ((block) (%cvt:block tail ctx)) 
+                  ;; cvt:head should already have been handled in build-template-set or
+                  ;;   by the handler for the document element
+                  ((head) '())
+                  ((locale) (%cvt:locale tail ctx))
+                  ((defvar) (%cvt:defvar tail ctx))
+                  ((var) (%cvt:var tree ctx))
+                  ;; cvt:attr should be handled in the handler for its parent element
+                  ((attr) '())
+                  ((with) (%cvt:with tail ctx))
+                  ((if) (%cvt:if tail ctx))
+                  ;; cvt:else should already be handled by the %cvt:if handler
+                  ((else) '())
+                  ((for) (%cvt:for tail ctx)))
+                ;; attributes are handled by the handler for their element
+                (cond
+                  ((eqv? head '@) '())
+                  ((or (eqv? head '*TOP*)
+                       (eqv? head '*PI*)
+                       (eqv? head '*NAMESPACES*))
+                   (cons head (process-tree tail ctx)))
+                  ((symbol? head) (%* tree ctx))
+                  ((and (not head) (eqv? state 'init))   ; This is probably a default NS annotation
+                   (cons head (process-tree tail ctx)))
+                  (else
+                    (eprintf "Node not handled: ~A\n" head)))))))))))
 
 
 (define (process-content content ctx)
@@ -768,7 +780,7 @@
            (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
            (eqv? head '@))
        (cons head (process-tree tail context)))
-      ((cvt-name? head)
+      ((cvt-name? head context)
        (eprintf "The document element of the base template is '~A', which is invalid."))
       (else
         (assert (eqv? (context 'get-state) 'init))
