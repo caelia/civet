@@ -679,54 +679,56 @@
   (print "\nPROCESS-TREE:")
   (pp tree)
   (let ((state (ctx 'get-state)))
-    (if (or (string? tree) (symbol? tree) (null? tree))
-      tree
-      (let* ((head (car tree))
-             (tail (cdr tree)))
-        (cond
-          ((null? head)
-           (process-tree tail ctx))
-          ((string? head)
-           (cons head (process-tree tail ctx)))
-          ((list? head)
-           (filter
-             identity
-             (map
-               (lambda (node) (process-tree node ctx))
-               tree)))
-          (else
-            (let ((cvt-localname (cvt-name? head ctx)))
-              (if cvt-localname
-                ;; cvt:template should have been handled already by build-template-set
-                (case (string->symbol cvt-localname)
-                  ((template)
-                   (eprintf "The <cvt:template> element cannot occur in a base template"))
-                  ((block) (%cvt:block tree ctx)) 
-                  ;; cvt:head should already have been handled in build-template-set or
-                  ;;   by the handler for the document element
-                  ((head) '())
-                  ((locale) (%cvt:locale tree ctx))
-                  ((defvar) (%cvt:defvar tree ctx))
-                  ((var) (%cvt:var tree ctx))
-                  ;; cvt:attr should be handled in the handler for its parent element
-                  ((attr) '())
-                  ((with) (%cvt:with tree ctx))
-                  ((if) (%cvt:if tree ctx))
-                  ;; cvt:else should already be handled by the %cvt:if handler
-                  ((else) '())
-                  ((for) (%cvt:for tree ctx)))
-                ;; attributes are handled by the handler for their element
-                (cond
-                  ((eqv? head '@) #f)
-                  ((or (eqv? head '*TOP*)
-                       (eqv? head '*PI*)
-                       (eqv? head '*NAMESPACES*))
-                   (cons head (process-tree tail ctx)))
-                  ((symbol? head) (%* tree ctx))
-                  ((and (not head) (eqv? state 'init))   ; This is probably a default NS annotation
-                   (cons head (process-tree tail ctx)))
-                  (else
-                    (eprintf "Node not handled: ~A\n" head)))))))))))
+    (cond
+      ((null? tree) #f)
+      ((or (string? tree) (symbol? tree)) tree)
+      (else
+        (let* ((head (car tree))
+               (tail (cdr tree)))
+          (cond
+            ((null? head)
+             (process-tree tail ctx))
+            ((string? head)
+             (cons head (process-tree tail ctx)))
+            ((list? head)
+             (filter
+               identity
+               (map
+                 (lambda (node) (process-tree node ctx))
+                 tree)))
+            (else
+              (let ((cvt-localname (cvt-name? head ctx)))
+                (if cvt-localname
+                  ;; cvt:template should have been handled already by build-template-set
+                  (case (string->symbol cvt-localname)
+                    ((template)
+                     (eprintf "The <cvt:template> element cannot occur in a base template"))
+                    ((block) (%cvt:block tree ctx)) 
+                    ;; cvt:head should already have been handled in build-template-set or
+                    ;;   by the handler for the document element
+                    ((head) '())
+                    ((locale) (%cvt:locale tree ctx))
+                    ((defvar) (%cvt:defvar tree ctx))
+                    ((var) (%cvt:var tree ctx))
+                    ;; cvt:attr should be handled in the handler for its parent element
+                    ((attr) '())
+                    ((with) (%cvt:with tree ctx))
+                    ((if) (%cvt:if tree ctx))
+                    ;; cvt:else should already be handled by the %cvt:if handler
+                    ((else) '())
+                    ((for) (%cvt:for tree ctx)))
+                  ;; attributes are handled by the handler for their element
+                  (cond
+                    ((eqv? head '@) #f)
+                    ((or (eqv? head '*TOP*)
+                         (eqv? head '*PI*)
+                         (eqv? head '*NAMESPACES*))
+                     (cons head (process-tree tail ctx)))
+                    ((symbol? head) (%* tree ctx))
+                    ((and (not head) (eqv? state 'init))   ; This is probably a default NS annotation
+                     (cons head (process-tree tail ctx)))
+                    (else
+                      (eprintf "Node not handled: ~A\n" head))))))))))))
 
 
 (define (process-content content ctx)
