@@ -135,26 +135,126 @@ XML
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  SIMPLE TEMPLATE PROCESSING  --------------------------------------
+;;; ------  Support data  --------------------------------------------------
 
-;;; ------------------------------------------------------------------------
+(define min-ctx
+  (make-context state: 'init))
+
+(define min-doc
+  '(*TOP*
+     (a
+       (b "Some text."))))
+
+(define ctx-tr1-1
+  (make-context state: 'init
+                vars: '((color . "green"))
+                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
+                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))))
+
+(define doc-tr1-1
+  '(*TOP*
+     (@
+       (*NAMESPACES* 
+         (#f "http://www.w3.org/1999/xhtml")
+         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+     (html
+       (head
+         (title "test doc"))
+       (body
+         (p "Pointless text")))))
+
+(define doc-tr1-2-in
+  '(*TOP*
+     (@
+       (*NAMESPACES* 
+         (#f "http://www.w3.org/1999/xhtml")
+         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+     (html
+       (head
+         (title "test doc"))
+       (body
+         (p
+           (cvt:var (@ (name "color"))))))))
+
+(define doc-tr1-2-out
+  '(*TOP*
+     (@
+       (*NAMESPACES* 
+         (#f "http://www.w3.org/1999/xhtml")
+         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+     (html
+       (head
+         (title "test doc"))
+       (body
+         (p "green")))))
 
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
-
+(test-group "[TR1] Simple Transformations"
+  (test
+    "TR1.01: Simple Template without CVT Markup (identity)"
+    min-doc
+    (process-base-template min-doc '() min-ctx))
+  (test
+    "TR1.02: XHTML Template without CVT Markup (identity)"
+    doc-tr1-1
+    (process-base-template doc-tr1-1 '() ctx-tr1-1))
+  (test
+    "TR1.03: Basic string variable substitution"
+    doc-tr1-2-out
+    (process-base-template doc-tr1-2-in '() ctx-tr1-1)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE SET CONSTRUCTION  ---------------------------------------
+;;; ------  Support data  --------------------------------------------------
 
+(define ctx-tr2-1
+  (make-context state: 'init
+                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
+                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))))
 
-;;; ------------------------------------------------------------------------
+(define doc-tr2-1
+  '(*TOP*
+     (@
+       (*NAMESPACES* 
+         (#f "http://www.w3.org/1999/xhtml")
+         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+     (cvt:template
+       (html
+         (head
+           (title "Bad template"))
+         (body
+           (p "Should never see the light of day"))))))
+
+(define doc-tr2-3
+  '(*TOP*
+     (@
+       (*NAMESPACES* 
+         (#f "http://www.w3.org/1999/xhtml")
+         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+     (html
+       (cvt:template
+         (@
+           (extends "fubar.html"))
+         (head
+           (title "Bad template"))
+         (body
+           (p "Should never see the light of day"))))))
 
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
+(test-group "[TR2] Template Sets"
+  (test-error
+    "TR2.01: cvt:template with no extension attribute [ERROR]"
+    (process-base-template doc-tr2-1 '() ctx-tr2-1))
+  (test-error
+    "TR2.02: cvt:template as descendant of the document element [ERROR]"
+    (process-base-template doc-tr2-1 '() ctx-tr2-1)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
