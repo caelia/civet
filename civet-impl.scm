@@ -135,6 +135,11 @@
                 (lambda (elt) (car elt))
                 attrs2)))
         (append (delete-dups keys attrs1) attrs2)))))
+
+(define (unwrap depth lst)
+  (if (<= depth 0)
+    lst
+    (join (unwrap (- depth 1) lst))))
     
 ;; This is just for debugging purposes
 (define (describe-tree t)
@@ -557,14 +562,14 @@
          (else-node
            (let ((se (sxpath '(cvt:else) (*sxpath-nsmap*))))
              (se content))))
-    (cond
-      (test-result
-        (process-tree content (context->context ctx test: #t)))
-      ((and (not test-result) else-node)
-       (process-tree else-node ctx))
-      (else
-        #f))))
-        ; '()))))
+    (let-values (((depth subtree)
+                  (cond
+                    (test-result
+                      (process-tree content (context->context ctx test: #t)))
+                    ((and (not test-result) else-node)
+                     (process-tree else-node ctx))
+                    (else (values 0 '())))))
+      (values 1 subtree))))
 
 (define (%cvt:else node ctx)
   '())
@@ -659,29 +664,27 @@
 ;;   for the time being, just in case.
 ; (define (%cvt:* attrs content ctx) #f)
 
-(define (%* element ctx)
+(define (%element element ctx)
   (let* ((tag (car element))
          (kids (cdr element))
          (al-exp (sxpath '(@ *) (*sxpath-nsmap*)))
          ; (att-node (al-exp element)) 
          ; (att-list (cdar att-node))
          (att-list* (al-exp element))
-         (att-list (map (lambda (attr) (%@* attr ctx)) att-list*))
+         (att-list (map (lambda (attr) (%attribute attr ctx)) att-list*))
          (ta-exp (sxpath '(cvt:attr) (*sxpath-nsmap*)))
          (template-attrs (ta-exp element))
          (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
          (final-attvals (update-attrs att-list template-attvals)))
-    (if final-attvals
-      (cons
-        tag
-        (cons
-          (cons '@ final-attvals)
-          (process-tree kids ctx)))
-      (cons
-        tag
-        (process-tree kids ctx)))))
+    (let*-values (((depth subtree*) (process-tree kids ctx))
+                  ((subtree) (unwrap depth subtree)))
+      (values
+        0
+        (if final-attvals
+          (cons tag (cons (cons '@ final-attvals) subtree))
+          (cons tag subtree)))))
 
-(define (%@* attr ctx)
+(define (%attribute attr ctx)
   (let* ((name* (car attr))
          (value* (cadr attr))
          (localname (cvt-name? name* ctx))
@@ -691,6 +694,13 @@
              value*))
          (name (or (and localname (string->symbol localname)) name*)))
     (list name value)))
+
+(define (%node-list nl ctx)
+  (let ((head* (car nl))
+        (tail* (cdr nl)))
+    (let-values (((hdepth head) (process-tree head* ctx))
+                 ((tdepth tail) (process-tree tail* ctx)))
+      (values 0 (cons (unwrap hdepth head) (unwrap tdepth tail))))))
 
 (define (cvt-name? qname ctx)
   (and qname
@@ -704,9 +714,8 @@
 ;; This is the generic dispatch function
 (define (process-tree tree ctx)
   ; (describe-tree tree)
-  (let ((state (ctx 'get-state)))
-    (if (or (string? tree) (symbol? tree) (null? tree))
-      tree
+  (cond
+    ((pair? tree)
       (let* ((head (car tree))
              (tail (cdr tree)))
         (cond
@@ -748,11 +757,11 @@
                        (eqv? head '*PI*)
                        (eqv? head '*NAMESPACES*))
                    (cons head (process-tree tail ctx)))
-                  ((symbol? head) (%* tree ctx))
+                  ((symbol? head) (%element tree ctx))
                   ((and (not head) (eqv? state 'top))   ; This is probably a default NS annotation
                    (cons head (process-tree tail ctx)))
                   (else
-                    (eprintf "Node not handled: ~A\n" head)))))))))))
+                    (eprintf "Node not handled: ~A\n" head))))))))))))))
 
 
 (define (process-content content ctx)
@@ -806,24 +815,30 @@
         (tail (cdr template)))
     (cond
       ((list? head)
-       (map
-         (lambda (node)
-           (process-base-template node block-data context))
-         template))
+       (values
+         0
+         (map
+           (lambda (node)
+             (let-values (((depth subtree) (process-base-template node block-data context)))
+               (unwrap depth subtree)))
+           template)))
       ((eqv? head '*TOP*)
-       (cons head (process-base-template tail block-data (context->context context state: 'top))))
+       (let-values (((depth subtree)
+                     (process-base-template tail block-data (context->context context state: 'top))))
+         (cons head (unwrap depth subtree))))
       ((or (eqv? head '*PI*)
            (eqv? head '*NAMESPACES*)
            (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
            (eqv? head '@))
        (assert (eqv? (context 'get-state) 'top))
-       (cons head (process-tree tail context)))
+       (let-values (((depth subtree) (process-tree tail context)))
+         (values 0 (cons head (unwrap depth subtree)))))
       ((cvt-name? head context)
        (eprintf "The document element of the base template is '~A', which is invalid."))
       (else
         (assert (eqv? (context 'get-state) 'top))
         (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
-          (%* template child-ctx))))))
+          (%element template child-ctx))))))
           ;(cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
