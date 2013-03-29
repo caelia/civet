@@ -371,7 +371,7 @@
 (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
                           (-attrs #f) (+nsmap #f) (-nsmap #f)
                           (+locale #f) (-locale #f) (+blocks #f)
-                          (-blocks #f) (new-state #f))
+                          (-blocks #f) (state #f))
   (let ((prev-vars (ctx 'get-vars))
         (prev-attrs (ctx 'get-attrs))
         (prev-nsmap (ctx 'get-nsmap))
@@ -383,7 +383,7 @@
                   nsmap: (alist-merge (alist-except prev-nsmap -nsmap) +nsmap)
                   locale: (alist-merge (alist-except prev-locale -locale) +locale)
                   blocks: (alist-merge (alist-except prev-blocks -blocks) +blocks)
-                  state: (or new-state prev-state))))
+                  state: (or state prev-state))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -545,7 +545,8 @@
       ((and required (not value))
        (eprintf "No value provided for required variable '~A'\n." var-name))
       (value value)
-      (else '()))))
+      ; (else '()))))
+      (else #f))))
 
 
 (define (%cvt:if node ctx)
@@ -562,7 +563,8 @@
       ((and (not test-result) else-node)
        (process-tree else-node ctx))
       (else
-        '()))))
+        #f))))
+        ; '()))))
 
 (define (%cvt:else node ctx)
   '())
@@ -669,8 +671,6 @@
          (template-attrs (ta-exp element))
          (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
          (final-attvals (update-attrs att-list template-attvals)))
-    (printf "[att-list*]> ~A\n" att-list*)
-    (printf "[att-list]> ~A\n" att-list)
     (if final-attvals
       (cons
         tag
@@ -697,7 +697,7 @@
     (let ((parts (string-split (symbol->string qname) ":")))
       (and (= (length parts) 2)
            (or (string=? (car parts) (*civet-ns-uri*))
-               (string=? (ctx 'pfx->uri (string->symbol (car parts)))
+               (equal? (ctx 'pfx->uri (string->symbol (car parts)))
                          (*civet-ns-uri*)))
            (cadr parts)))))
 
@@ -749,7 +749,7 @@
                        (eqv? head '*NAMESPACES*))
                    (cons head (process-tree tail ctx)))
                   ((symbol? head) (%* tree ctx))
-                  ((and (not head) (eqv? state 'init))   ; This is probably a default NS annotation
+                  ((and (not head) (eqv? state 'top))   ; This is probably a default NS annotation
                    (cons head (process-tree tail ctx)))
                   (else
                     (eprintf "Node not handled: ~A\n" head)))))))))))
@@ -811,18 +811,20 @@
            (process-base-template node block-data context))
          template))
       ((eqv? head '*TOP*)
-       (cons head (process-base-template tail block-data context)))
+       (cons head (process-base-template tail block-data (context->context context state: 'top))))
       ((or (eqv? head '*PI*)
            (eqv? head '*NAMESPACES*)
            (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
            (eqv? head '@))
+       (assert (eqv? (context 'get-state) 'top))
        (cons head (process-tree tail context)))
       ((cvt-name? head context)
        (eprintf "The document element of the base template is '~A', which is invalid."))
       (else
-        (assert (eqv? (context 'get-state) 'init))
+        (assert (eqv? (context 'get-state) 'top))
         (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
-          (cons head (process-tree tail child-ctx)))))))
+          (%* template child-ctx))))))
+          ;(cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
   (let-values (((template block-data) (build-template-set name (context 'get-nsmap))))
