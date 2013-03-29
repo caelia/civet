@@ -556,18 +556,18 @@
          (test-result (eval-test test-expr ctx))
          (else-node
            (let ((se (sxpath '(cvt:else) (*sxpath-nsmap*))))
-             (se content))))
+             (se node))))
     (cond
       (test-result
         (join (process-tree content (context->context ctx test: #t))))
       ((and (not test-result) else-node)
-       (join (process-tree else-node ctx)))
+       (join (%cvt:else (car else-node) ctx)))
       (else
         #f))))
         ; '()))))
 
 (define (%cvt:else node ctx)
-  '())
+  (process-tree (cdr node) ctx))
 
 
 (define (register-sort-fun type asc desc)
