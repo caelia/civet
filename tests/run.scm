@@ -267,7 +267,7 @@ XML
          (head (title))
          (body
            (cvt:if
-             (@ (test "color"))
+             (@ (test "bolour"))
              (p (cvt:var (@ (name "size"))))
              (cvt:else
                (div (@ (id "age-div") (class "info"))
@@ -279,7 +279,8 @@ XML
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
-           (p "12")))))
+           (div (@ (id "age-div") (class "info"))
+                "27")))))
 
 (define doc-tr1-9-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
