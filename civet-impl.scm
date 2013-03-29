@@ -559,9 +559,9 @@
              (se content))))
     (cond
       (test-result
-        (process-tree content (context->context ctx test: #t)))
+        (join (process-tree content (context->context ctx test: #t))))
       ((and (not test-result) else-node)
-       (process-tree else-node ctx))
+       (join (process-tree else-node ctx)))
       (else
         #f))))
         ; '()))))
@@ -633,10 +633,10 @@
 ;; FIXME: seems like there should be a more efficient way to
 ;;   get the value of a child element
 (define (%cvt:attr elt ctx)
-  (let* ((name-exp (sxpath '(@name *text*) (*sxpath-nsmap*)))
-         (val-exp (sxpath '(@value *text*) (*sxpath-nsmap*)))
-         (type-exp (sxpath '(@type *text*) (*sxpath-nsmap*)))
-         (fmt-exp (sxpath '(@format *text*) (*sxpath-nsmap*)))
+  (let* ((name-exp (sxpath '(@ name *text*) (*sxpath-nsmap*)))
+         (val-exp (sxpath '(@ value *text*) (*sxpath-nsmap*)))
+         (type-exp (sxpath '(@ type *text*) (*sxpath-nsmap*)))
+         (fmt-exp (sxpath '(@ format *text*) (*sxpath-nsmap*)))
          (if-exp (sxpath '(cvt:if) (*sxpath-nsmap*)))
          (var-exp (sxpath '(cvt:var) (*sxpath-nsmap*)))
          (txt-exp (sxpath '(*text*) (*sxpath-nsmap*)))
@@ -646,42 +646,45 @@
          (txt-child (txt-exp elt))
          (child-value
            (cond
-             (if-child (%cvt:if if-child ctx))
-             (var-child (%cvt:var var-child ctx)) 
-             (txt-child txt-child)
+             ;; I believe (pair? x) is equivalent to (not (null? x)) for this purpose
+             ((pair? if-child) (%cvt:if if-child ctx))
+             ((pair? var-child) (%cvt:var var-child ctx)) 
+             ((pair? txt-child) txt-child)
              (else #f)))
-         (value (or child-value (val-exp elt))))
+         (value (or child-value (car (val-exp elt)))))
     ;; FIXME: This simply uses the raw string value of the attribute,
     ;;   no accounting for type or format
-    (list name value))) 
+    (list (string->symbol (car name)) value))) 
 
 ;; Apparently there are no unknown cvt: elements, but I'll keep this
 ;;   for the time being, just in case.
 ; (define (%cvt:* attrs content ctx) #f)
 
-(define (%* element ctx)
+(define (%element element ctx)
   (let* ((tag (car element))
          (kids (cdr element))
          (al-exp (sxpath '(@ *) (*sxpath-nsmap*)))
          ; (att-node (al-exp element)) 
          ; (att-list (cdar att-node))
          (att-list* (al-exp element))
-         (att-list (map (lambda (attr) (%@* attr ctx)) att-list*))
+         (att-list (map (lambda (attr) (%attribute attr ctx)) att-list*))
          (ta-exp (sxpath '(cvt:attr) (*sxpath-nsmap*)))
          (template-attrs (ta-exp element))
+         ; (xxx (printf "\n[template-attrs]: ~A\n" template-attrs))
          (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
+         ; (xxx (printf "\n[template-attvals]: ~A\n" template-attvals))
          (final-attvals (update-attrs att-list template-attvals)))
     (if final-attvals
       (cons
         tag
         (cons
           (cons '@ final-attvals)
-          (process-tree kids ctx)))
+          (filter identity (process-tree kids ctx))))
       (cons
         tag
-        (process-tree kids ctx)))))
+        (filter identity (process-tree kids ctx))))))
 
-(define (%@* attr ctx)
+(define (%attribute attr ctx)
   (let* ((name* (car attr))
          (value* (cadr attr))
          (localname (cvt-name? name* ctx))
@@ -730,16 +733,19 @@
                   ((block) (%cvt:block tree ctx)) 
                   ;; cvt:head should already have been handled in build-template-set or
                   ;;   by the handler for the document element
-                  ((head) '())
+                  ; ((head) '())
+                  ((head) #f)
                   ((locale) (%cvt:locale tree ctx))
                   ((defvar) (%cvt:defvar tree ctx))
                   ((var) (%cvt:var tree ctx))
                   ;; cvt:attr should be handled in the handler for its parent element
-                  ((attr) '())
+                  ; ((attr) '())
+                  ((attr) #f)
                   ((with) (%cvt:with tree ctx))
                   ((if) (%cvt:if tree ctx))
                   ;; cvt:else should already be handled by the %cvt:if handler
-                  ((else) '())
+                  ; ((else) '())
+                  ((else) #f)
                   ((for) (%cvt:for tree ctx)))
                 ;; attributes are handled by the handler for their element
                 (cond
@@ -748,7 +754,7 @@
                        (eqv? head '*PI*)
                        (eqv? head '*NAMESPACES*))
                    (cons head (process-tree tail ctx)))
-                  ((symbol? head) (%* tree ctx))
+                  ((symbol? head) (%element tree ctx))
                   ((and (not head) (eqv? state 'top))   ; This is probably a default NS annotation
                    (cons head (process-tree tail ctx)))
                   (else
@@ -823,7 +829,7 @@
       (else
         (assert (eqv? (context 'get-state) 'top))
         (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
-          (%* template child-ctx))))))
+          (%element template child-ctx))))))
           ;(cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
