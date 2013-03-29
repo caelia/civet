@@ -258,9 +258,7 @@ XML
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
-           (cvt:if
-             (@ (test "color"))
-             (p "12"))))))
+           (p "12")))))
 
 (define doc-tr1-8-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
@@ -317,7 +315,7 @@ XML
          (head (title))
          (body
            (div
-             (@ (id "baz451") (class "Poinsettia") (chapeau "fedora"))
+             (@ (class "Poinsettia") (id "baz451") (chapeau "fedora"))
              "Div Contents")))))
 
 ;;; ========================================================================
