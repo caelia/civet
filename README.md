@@ -126,13 +126,52 @@ first is used for ascending sorts, the second for descending.
 
 ### PROCEDURES
 
-#### [procedure]  `(render TEMPLATE CONTEXT #!key (PORT #f) (FILE #f) (NSMAP '())`
-#### [procedure]  `(process-template-set TEMPLATE CONTEXT)
-#### [procedure]  `(process-base-template TEMPLATE BLOCK-DATA CONTEXT)
-#### [procedure]  `(load-template NAME #!optional (NSMAP '())
-#### [procedure]  `(build-template-set NAME #!optional (NSMAP '())
-#### [procedure]  `(make-context KWARGS)
-#### [procedure]  `(context->context CONTEXT KWARGS)
+#### [procedure]  `(render TEMPLATE CONTEXT #!key (PORT #f) (FILE #f))`
+
+This is the main function used to transform a template to some form of
+useful output (such as an XHTML web page). The TEMPLATE argument should be
+the filename of a template, including the extension but not including the
+directory path. CONTEXT is a context object (see `make-context` below for a
+description). There are two keyword arguments to specify an output
+destination: PORT is an output port, and FILE is a filename. If both are
+given, PORT takes precedence; if neither is given, the output will be
+returned as a string. 
+
+#### [procedure]  `(process-template-set TEMPLATE CONTEXT)`
+
+This function is similar to `render`, but returns an SXML document rather
+than rendering to XML.
+
+#### [procedure]  `(process-base-template TEMPLATE BLOCK-DATA CONTEXT)`
+
+This function takes an SXML template, TEMPLATE, and an alist containing SXML
+blocks (which generally will have been read from extension templates, but
+could potentially be created programmatically), and a CONTEXT object, and
+returns a transformed SXML document. The BLOCK-DATA alist consists of
+`'((NAME . BLOCK) ...), where NAME corresponds to the name of a block in the
+base template, and BLOCK is an SXML fragment consisting of a `cvt:block`
+element and its content.
+
+#### [procedure]  `(load-template NAME #!optional (NSMAP '())`
+
+Loads a template from a file. NAME should be a filename including the
+extension but excluding the directory path. The optional NSMAP argument is
+an alist in the form `'((PREFIX . NAMESPACE-URI) ...)`, where PREFIX is a
+symbol (except in the case of a default namespace, in which case it should
+be `#f`. NSMAP overrides or extends the list of namespace bindings defined in
+`*default-nsmap*`.
+
+Note that when you load a template, a primitive form of caching is peformed
+behind the scenes. Specifically, whenever you load a new or modified
+template from XML, the resulting SXML document is saved to a file in the
+cache path (`<site-path>/templates/.cache` by default). On subsequent
+invocations of this procedure, if the cached SXML file exists and is newer,
+it will be loaded in place of the XML file. At present it is not possible to
+override this behavior.
+
+#### [procedure]  `(build-template-set NAME #!optional (NSMAP '())`
+#### [procedure]  `(make-context KWARGS)`
+#### [procedure]  `(context->context CONTEXT KWARGS)`
 
 
 Template Vocabulary, version 0.1
