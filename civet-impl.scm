@@ -63,10 +63,10 @@
 
 (define *sort-functions*
   (make-parameter
-    '((string . (string<? string>?))
-      (char . (char<? char>?))
-      (number . (< >))
-      (boolean . ((lambda (a b) (or (not a) b)) (lambda (a b) (or a (not b))))))))
+    `((string . (,string<? ,string>?))
+      (char . (,char<? ,char>?))
+      (number . (,< ,>))
+      (boolean . (,(lambda (a b) (or (not a) b)) ,(lambda (a b) (or a (not b))))))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -159,6 +159,64 @@
                           ((symbol? tail) "<SYMBOL>")
                           ((list? tail) "<LIST>"))
                         ")"))))))
+
+(define (symbol-depth obj #!optional (depth 0))
+  (cond
+    ((or (not obj) (null? obj) (string? obj)) #f)
+    ((symbol? obj) depth)
+    (else (symbol-depth (car obj) (+ depth 1)))))
+
+(define (nest-depth obj #!optional (depth 0))
+  (if (and (list? obj) (not (null? obj)))
+    (nest-depth (car obj) (+ depth 1))
+    depth))
+
+;; FIXME: don't understand why this isn't working.
+; (define (normalize-subtree st)
+;   (let ((st* (filter identity st)))
+;   (cond
+;     ((string? st*) st*)
+;     ((list? st*)
+;      (let ((sd (symbol-depth st*)))
+;        (when sd
+;          (cond
+;            ((and (= sd 3) (= (length st*) 1))
+;             (normalize-subtree (car st*)))
+;            ((= sd 2)
+;             (map normalize-subtree st*))
+;            ((and (= sd 1)
+;                  (or (null? (cdr st*))
+;                      (string? (cadr st*))
+;                      (list? (cadr st*))))
+;             st*)))))
+;     (else
+;       (eprintf "Failed to normalize subtree! ~A" st*))))
+;   )
+
+; (define (normalize-subtree st)
+  ; (filter identity st))
+
+; (define (normalize-subtree st*)
+;   (cond
+;     ((string? st*) st*)
+;     ((list? st*)
+;      (let* ((st (filter identity st*))
+;             (sd (symbol-depth st)))
+;        (if (and sd (>= sd 3) (= (length st) 1))
+;          (normalize-subtree (car st))
+;          st)))
+;     (else
+;       (eprintf "Failed to normalize subtree: ~A" st*))))
+
+(define (normalize-subtree st)
+  (if (list? st)
+    (let ((nd (nest-depth st)))
+      (cond
+        ((and (= nd 3) (= (length st) 1)) (car st))
+        ((and (= nd 2) (string? (caar st))) (car st))
+        ((<= nd 2) st)
+        (else (eprintf "Failed to normalize subtree: ~A" st))))
+    st))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -535,7 +593,7 @@
          (obj+field (string-split var-name "."))
          (value
            (if (= (length obj+field) 2)
-             (ctx 'get-field (car obj+field) (cadr obj+field))
+             (ctx 'get-field (string->symbol (car obj+field)) (string->symbol (cadr obj+field)))
              (ctx 'get-var (string->symbol var-name))))
          (var-type (get-attval attrs 'type "string"))
          (req-str (get-attval attrs 'required))
@@ -545,7 +603,6 @@
       ((and required (not value))
        (eprintf "No value provided for required variable '~A'\n." var-name))
       (value value)
-      ; (else '()))))
       (else #f))))
 
 
@@ -559,12 +616,11 @@
              (se node))))
     (cond
       (test-result
-        (join (process-tree content (context->context ctx test: #t))))
+        (process-tree content (context->context ctx test: #t)))
       ((and (not test-result) else-node)
-       (join (%cvt:else (car else-node) ctx)))
+       (%cvt:else (car else-node) ctx))
       (else
         #f))))
-        ; '()))))
 
 (define (%cvt:else node ctx)
   (process-tree (cdr node) ctx))
@@ -585,29 +641,37 @@
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
          (var-name (get-attval attrs "in"))
-         (value (ctx 'get-var var-name)))
+         (value (ctx 'get-var (string->symbol var-name))))
     (if value
       (let* ((local-key (string->symbol (get-attval attrs "each")))
-             (type (get-attval attrs "type" "string"))
+             (type (string->symbol (get-attval attrs "type" "string")))
              (sort-type (string->symbol (get-attval attrs "sort" "auto")))
-             (sort-field (get-attval attrs "sort-field"))
+             (sort-field* (get-attval attrs "sort-field"))
+             (sort-field (and sort-field* (string->symbol sort-field*)))
              (order (string->symbol (get-attval attrs "order" "asc")))
              (base-sortfun
                (case sort-type
                  ((alpha) (if (eqv? order 'asc) string<? string>?))
                  ((numeric) (if (eqv? order 'asc) < >))
+                 ((none) #f)
                  ((auto) (sort-fun type order))))
              (sortfun
-               (if sort-field
-                 (lambda (ox oy)
-                   (let ((fx (alist-ref sort-field ox))
-                         (fy (alist-ref sort-field oy)))
-                     (base-sortfun fx fy)))
-                 base-sortfun)))
-        (for-each
-          (lambda (elt)
-            (process-tree content (context->context +vars: (list (cons local-key elt)))))
-          (sort value sortfun))))))
+               (and base-sortfun
+                    (if sort-field
+                      (lambda (ox oy)
+                        (let ((fx (alist-ref sort-field ox))
+                              (fy (alist-ref sort-field oy)))
+                          (base-sortfun fx fy)))
+                      base-sortfun)))
+             (sorted
+               (if sortfun
+                 (sort value sortfun)
+                 value)))
+        (join
+          (map
+            (lambda (elt)
+              (process-tree content (context->context ctx +vars: (list (cons local-key elt)))))
+            sorted))))))
 
 (define (%cvt:with node ctx)
   (let* ((attrs (get-attrs node))
@@ -617,7 +681,7 @@
     (let loop ((nodes nodes*)
                (local-vars '()))
       (if (null? nodes)
-        (process-tree content (context->context +vars: local-vars))
+        (process-tree content (context->context ctx +vars: local-vars))
         (let* ((defnode (car nodes))
                (var-name (get-attval defnode "name"))
                (value (or (get-attval defnode "value")
@@ -661,28 +725,29 @@
 ; (define (%cvt:* attrs content ctx) #f)
 
 (define (%element element ctx)
-  (let* ((tag (car element))
-         (kids (cdr element))
-         (al-exp (sxpath '(@ *) (*sxpath-nsmap*)))
-         ; (att-node (al-exp element)) 
-         ; (att-list (cdar att-node))
-         (att-list* (al-exp element))
-         (att-list (map (lambda (attr) (%attribute attr ctx)) att-list*))
-         (ta-exp (sxpath '(cvt:attr) (*sxpath-nsmap*)))
-         (template-attrs (ta-exp element))
-         ; (xxx (printf "\n[template-attrs]: ~A\n" template-attrs))
-         (template-attvals (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
-         ; (xxx (printf "\n[template-attvals]: ~A\n" template-attvals))
-         (final-attvals (update-attrs att-list template-attvals)))
+  (let* ((tag
+           (car element))
+         (kids
+           (cdr element))
+         (al-exp
+           (sxpath '(@ *) (*sxpath-nsmap*)))
+         (att-list*
+           (al-exp element))
+         (att-list
+           (map (lambda (attr) (%attribute attr ctx)) att-list*))
+         (ta-exp
+           (sxpath '(cvt:attr) (*sxpath-nsmap*)))
+         (template-attrs
+           (ta-exp element))
+         (template-attvals
+           (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
+         (final-attvals
+           (update-attrs att-list template-attvals))
+         (final-kids
+           (normalize-subtree (process-tree kids ctx))))
     (if final-attvals
-      (cons
-        tag
-        (cons
-          (cons '@ final-attvals)
-          (filter identity (process-tree kids ctx))))
-      (cons
-        tag
-        (filter identity (process-tree kids ctx))))))
+      (cons tag (cons (cons '@ final-attvals) final-kids))
+      (cons tag final-kids))))
 
 (define (%attribute attr ctx)
   (let* ((name* (car attr))
@@ -706,7 +771,6 @@
 
 ;; This is the generic dispatch function
 (define (process-tree tree ctx)
-  ; (describe-tree tree)
   (let ((state (ctx 'get-state)))
     (if (or (string? tree) (symbol? tree) (null? tree))
       tree
