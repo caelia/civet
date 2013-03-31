@@ -17,7 +17,8 @@ controls the structure of the output and inserts dynamic content.
 A **template set** consists of a **base template** and one or more
 **extension templates**. The base template determines the document type of
 the output and its overall structure. As of Version 0.1, the base template
-is the only one that can include content outside of **blocks**.
+is the only one that should include content outside of **blocks**. Any
+content outside of blocks in an extension template will be ignored. 
 
 Extension templates are used to specialize various aspects of the base
 template. They may also be chained so as to specialize other extension
@@ -35,7 +36,6 @@ prefix. The namespace URI for the template vocabulary is
 For best results, please ensure that all templates in your installation use
 the same prefix for this namespace. Here at Coq au Vin World Headquarters,
 we use the prefix `cvt`.
-
 
 
 Template Vocabulary, version 0.1
@@ -92,6 +92,8 @@ May not contain text nodes or any markup from the target vocabulary.
 
 #### head
 
+Contains elements that set variables and/or configure processing behavior.
+
 ##### Context:
 
 First child of the document element of a template.
@@ -109,9 +111,15 @@ May contain, in any order:
 
 #### locale
 
+May be used to determine locale options within a template. Currently has no
+effect. I'm not sure if this element should be supported or not. Certainly,
+locale options are useful at the application level, but not necessarily
+within a template, so this element will probably be discontinued if it does
+not prove useful in the near future.
+
 ##### Context:
 
-Within `config`.
+Within `head`.
 
 ##### Content:
 
@@ -132,6 +140,10 @@ Empty.
 
 #### defvar
 
+Sets a variable's value within its local scope (i.e. for the template if
+contained in `head`, otherwise within the lexical scope of its parent
+element).
+
 ##### Context:
 
 Within a `head`, `block`, or `with`.
@@ -142,7 +154,7 @@ Any element other than `template`, `head`, or `block`
 
 ##### Attributes:
 
-- **name** [required] 
+- **name** [required] The variable name to set.
 
 - **type** [optional, default=auto] The value may be any known datatype, where
   *known* includes the built-in types and any types defined in the processing
@@ -163,10 +175,14 @@ of content, or be empty. The order of blocks within the document (and of any
 interspersed content outside of blocks) is determined by the base template,
 and may not be altered by extension templates.
 
-Each block has a required `id` attribute. Following the usual practice, its
+Each block has a required `name` attribute. Following the usual practice, its
 value must be unique within any given document. Furthermore, any block ID
 used in an extension template must match one defined in the base template of
 the set.
+
+Nested blocks are not currently allowed, and will raise an error. Nesting
+may be supported in future versions if it is deemed a useful feature and can
+be implemented in a reasonable manner.
 
 The following rules govern the relationships of corresponding blocks (i.e.,
 those whose IDs match) among different templates in a set.
@@ -192,7 +208,7 @@ those whose IDs match) among different templates in a set.
 
 ##### Attributes:
 
-- **id** [required] An arbitrary identifier that must be unique at document
+- **name** [required] An arbitrary identifier that must be unique at document
   level.
 
 
@@ -208,7 +224,10 @@ by the processor, but may also be defined within the template (see
 
 - **name** [required] The identifier for the variable; in order to insert
   content, this value must be matched in the `vars` alist defined in the
-  processing application, or by a variable defined within the template.
+  processing application, or by a variable defined within the template. If
+  the name is a **qualified name**, indicated with dotted notation, the
+  processor will retrieve the named field from the named object (i.e.:
+  &lt;object&gt;.&lt;field&gt;)
 
 - **required** [optional, default: true] Whether the variable is required to
   be defined. Any required variable that is undefined is an error.
@@ -228,9 +247,9 @@ by the processor, but may also be defined within the template (see
 
     + float
 
-    + element
-
     + list:&lt;type&gt;
+
+    + object
 
     + node-list
 
@@ -242,32 +261,65 @@ by the processor, but may also be defined within the template (see
 
 ------------------------------------------------------------------------
 
-#### object
+#### if
 
+The basic conditional structure. If the test specified by the `test`
+attribute returns true, all content of the `if` element is written to the
+output; otherwise it is ommitted. May contain an optional `else` element.
+
+NOTE: The effects of nested `if` elements have not been tested.
+
+##### Context:
+
+May be contained within any element, but see above note on nesting.
+
+##### Contents:
+
+Any element except `template` and `block`.
 
 ##### Attributes:
 
-- **name** [required] Equivalent to the name attribute for `var` and `block`.
+- **test** [required] A boolean expression. See `Expression Language` below.
 
+##### Expression Language:
 
-------------------------------------------------------------------------
+The `test` attribute uses a simple expression language, including the
+following expressions:
 
-#### field
+&lt;var-name&gt;   Returns #t if the variable is defined in the current
+context, false otherwise.
 
+&lt;var-name&gt; = &lt;expr&gt;   Returns #t if the variable value is equal
+(using equal?) to the right-side expression. The right-side expression may
+be a (quoted) string or numeric literal, or another variable name.
 
-------------------------------------------------------------------------
+&lt;var-name&gt; != &lt;expr&gt;   Returns #t if the variable value is
+unequal to the right-side expression.
 
-#### if
+&lt;function&gt;(&lt;var-name&gt;, &lt;expr&gt;)   Performs a numeric
+comparison between the named variable and the right-side expression. Four
+functions are supported:
 
+- **lt**  Less than
+- **gt**  Greater than
+- **le**  Less than or equal to
+- **ge**  Greater than or equal to
+
+Whitespace is allowed but not required at the beginning and end of an
+expression, and between any two tokens.
 
 ------------------------------------------------------------------------
 
 #### else
 
+The content of this element is output if the `if` test fails.
+
 
 ------------------------------------------------------------------------
 
 #### for
+
+Iterate over a list variable.
 
 ##### Attributes:
 
@@ -290,10 +342,42 @@ by the processor, but may also be defined within the template (see
 
 #### with
 
+A container for variable definitions.
+
+##### Context:
+
+Anywhere in a base template, or anywhere within a block in an extension
+template.
+
+##### Content:
+
+Should contain one or more &lt;defvar&gt; elements [otherwise the `with`
+element serves no purpose], followed by any other elements (except `block`
+and `template`).
+
+##### Attributes:
+
+None.
+
 
 ------------------------------------------------------------------------
 
 #### attr
+
+Sets an attribute on its parent element. If the literal attribute is already
+defined on the parent, the value specified by this element overrides it.
+Otherwise, it adds a new attribute to the parent.
+
+##### Context:
+
+Any element from the target vocabulary.
+
+##### Content:
+
+A string, or an expression that evaluates to a string (such as a `var` element
+with a string value).
+
+##### Attributes:
 
 - **name** [required]
 
@@ -315,6 +399,9 @@ substitution of a primitive data type with an obvious string representation.
 If you require any more complex manipulations, such as converting lists or
 objects to strings, or conditional processing, you must use the `attr`
 element.
+
+If an element has an attribute prefixed in this manner, and an `attr`
+element child, the `attr` element overrides the prefixed attribute.
 
 
 Template Processors
