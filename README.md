@@ -197,59 +197,59 @@ Directly manipulating the context object is not recommended. In general you
 should use `context->context` (see below). However, should you need to get
 or set any values, the closure responds to the following messages:
 
-- `(set-var! SYMBOL VALUE)
+- `(set-var! SYMBOL VALUE)`
 
-- `(update-vars! ALIST)
-`
-- `(set-vars! ALIST)
+- `(update-vars! ALIST)`
+ 
+- `(set-vars! ALIST)`
 
-- `(get-var SYMBOL)
+- `(get-var SYMBOL)`
 
-- `(get-vars)
+- `(get-vars)`
 
-- `(get-field OBJ-NAME FIELD-NAME)
+- `(get-field OBJ-NAME FIELD-NAME)`
 
-- `(pfx->uri NAMESPACE-PREFIX)
+- `(pfx->uri NAMESPACE-PREFIX)`
 
-- `(uri->pfx NAMESPACE-URI)
+- `(uri->pfx NAMESPACE-URI)`
 
-- `(set-ns! PREFIX URI)
+- `(set-ns! PREFIX URI)`
 
-- `(update-nsmap! ALIST)
+- `(update-nsmap! ALIST)`
 
-- `(set-nsmap! ALIST)
+- `(set-nsmap! ALIST)`
 
-- `(get-nsmap)
+- `(get-nsmap)`
 
-- `(set-attrs! ALIST)
+- `(set-attrs! ALIST)`
 
-- `(set-attr! SYMBOL VALUE)
+- `(set-attr! SYMBOL VALUE)`
 
-- `(get-attrs)
+- `(get-attrs)`
 
-- `(delete-attrs!)
+- `(delete-attrs!)`
 
-- `(set-block! SYMBOL SXML-FRAGMENT) 
+- `(set-block! SYMBOL SXML-FRAGMENT)` 
 
-- `(get-block SYMBOL)
+- `(get-block SYMBOL)`
 
-- `(get-blocks)
+- `(get-blocks)`
 
-- `(set-locale! ALIST)
+- `(set-locale! ALIST)`
 
-- `(set-lang! LANG-CODE)
+- `(set-lang! LANG-CODE)`
 
-- `(set-country! COUNTRY-CODE)
+- `(set-country! COUNTRY-CODE)`
 
-- `(set-encoding! ENCODING-NAME)
+- `(set-encoding! ENCODING-NAME)`
 
-- `(set-date-format! DATE-FORMAT)
+- `(set-date-format! DATE-FORMAT)`
 
-- `(get-locale)
+- `(get-locale)`
 
-- `(set-state! SYMBOL)
+- `(set-state! SYMBOL)`
 
-- `(get-state)
+- `(get-state)`
 
 
 #### [procedure]  `(context->context CONTEXT KWARGS)`
@@ -259,15 +259,25 @@ as the original except as modified by the KWARGS. The following keyword
 arguments are supported.
 
 - **+vars**    Updates or sets one or more variables. Takes an alist.
+
 - **+attrs**   Updates or sets one or more attributes. Takes an alist.
+
 - **+nsmap**   Updates or sets one or more namespace bindings. Takes an alist.
+
 - **+locale**  Updates or sets one or more locale options. Takes an alist.
+
 - **+blocks**  Updates or sets one or more template blocks. Takes an alist.
+
 - **-vars**    Unsets one or more variables. Takes a list of symbols.
+
 - **-attrs**   Unsets one or more attributes. Takes a list of symbols.
+
 - **-nsmap**   Unsets one or more namespace bindings. Takes a list of symbols.
+
 - **-locale**  Unsets one or more locale options. Takes a list of symbols.
+
 - **-blocks**  Unsets one or more template blocks. Takes a list of symbols.
+
 - **state**    Sets the state. Takes a symbol
 
 
