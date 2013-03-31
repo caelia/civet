@@ -900,7 +900,7 @@
   (let-values (((template block-data) (build-template-set name (context 'get-nsmap))))
     (process-base-template template block-data context)))
 
-(define (render template-name context #!key (port #f) (file #f) (nsmap '()))
+(define (render template-name context #!key (port #f) (file #f))
   (let ((final-tree (process-template-set template-name context)))
     (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*))))
 
