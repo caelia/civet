@@ -46,7 +46,7 @@ Scheme API
 #### [parameter] \*site-path\*
 
 The root directory of your web site. The template path is automatically
-calculated from this path unless you set `\*template-path\*`. If the value
+calculated from this path unless you set `*template-path*`. If the value
 of this parameter is `#f`, the processor assumes that the current working
 directory is the site path; likewise, if you set a relative path, that path
 is assumed to be relative to the current directory. Therefore it is a good
