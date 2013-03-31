@@ -170,8 +170,105 @@ it will be loaded in place of the XML file. At present it is not possible to
 override this behavior.
 
 #### [procedure]  `(build-template-set NAME #!optional (NSMAP '())`
+
+Given the NAME of an template file and an optional NSMAP, this procedure
+loads that template and any ancestors it references, and returns two values,
+the base template and an alist (referred to elsewhere as BLOCK-DATA) of the
+blocks extracted from any extension templates in the set.
+
 #### [procedure]  `(make-context KWARGS)`
+
+Returns a context object: a closure that is used to maintain state
+information during the processing run. The following keywords are supported:
+
+- **vars**      alist, default = '()
+
+- **attrs**     alist, default = '()
+
+- **nsmap**     alist, default = (*default-nsmap*)
+
+- **locale**    alist, default = '()
+
+- **blocks**    alist, default = '()
+
+- **state**     symbol, default = 'init
+
+Directly manipulating the context object is not recommended. In general you
+should use `context->context` (see below). However, should you need to get
+or set any values, the closure responds to the following messages:
+
+- `(set-var! SYMBOL VALUE)
+
+- `(update-vars! ALIST)
+`
+- `(set-vars! ALIST)
+
+- `(get-var SYMBOL)
+
+- `(get-vars)
+
+- `(get-field OBJ-NAME FIELD-NAME)
+
+- `(pfx->uri NAMESPACE-PREFIX)
+
+- `(uri->pfx NAMESPACE-URI)
+
+- `(set-ns! PREFIX URI)
+
+- `(update-nsmap! ALIST)
+
+- `(set-nsmap! ALIST)
+
+- `(get-nsmap)
+
+- `(set-attrs! ALIST)
+
+- `(set-attr! SYMBOL VALUE)
+
+- `(get-attrs)
+
+- `(delete-attrs!)
+
+- `(set-block! SYMBOL SXML-FRAGMENT) 
+
+- `(get-block SYMBOL)
+
+- `(get-blocks)
+
+- `(set-locale! ALIST)
+
+- `(set-lang! LANG-CODE)
+
+- `(set-country! COUNTRY-CODE)
+
+- `(set-encoding! ENCODING-NAME)
+
+- `(set-date-format! DATE-FORMAT)
+
+- `(get-locale)
+
+- `(set-state! SYMBOL)
+
+- `(get-state)
+
+
 #### [procedure]  `(context->context CONTEXT KWARGS)`
+
+Returns a new context object based on the existing one, with the same data
+as the original except as modified by the KWARGS. The following keyword
+arguments are supported.
+
+- **+vars**    Updates or sets one or more variables. Takes an alist.
+- **+attrs**   Updates or sets one or more attributes. Takes an alist.
+- **+nsmap**   Updates or sets one or more namespace bindings. Takes an alist.
+- **+locale**  Updates or sets one or more locale options. Takes an alist.
+- **+blocks**  Updates or sets one or more template blocks. Takes an alist.
+- **-vars**    Unsets one or more variables. Takes a list of symbols.
+- **-attrs**   Unsets one or more attributes. Takes a list of symbols.
+- **-nsmap**   Unsets one or more namespace bindings. Takes a list of symbols.
+- **-locale**  Unsets one or more locale options. Takes a list of symbols.
+- **-blocks**  Unsets one or more template blocks. Takes a list of symbols.
+- **state**    Sets the state. Takes a symbol
 
 
 Template Vocabulary, version 0.1
