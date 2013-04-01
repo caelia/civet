@@ -78,6 +78,7 @@
   (test "alist-merge with two null lists" al1 (alist-merge al1 al1))
   (test "alist-merge with first list null" al2 (alist-merge al1 al2))
   (test "alist-merge with second list null" al2 (alist-merge al2 al1))
+  (test "alist-merge with two identical lists" al2 (alist-merge al2 al2))
   (test "alist-merge with two disjoint lists" ol1 (alist-merge al2 al3))
   (test "alist-merge with two overlapping lists [1]" ol2 (alist-merge al2 al4))
   (test "alist-merge with two overlapping lists [2]" ol3 (alist-merge al4 al3))
