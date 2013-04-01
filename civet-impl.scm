@@ -458,7 +458,10 @@
         (< cached-modtime raw-modtime))))
 
 (define (load-template name #!optional (nsmap '()))
-  (let* ((nsmap* (alist-merge (*default-nsmap*) nsmap))
+  (let* ((nsmap*
+           (if nsmap
+             (alist-merge (*default-nsmap*) nsmap)
+             '()))
          (raw-template (make-pathname (template-path) name))
          (sxml-name (pathname-replace-extension name "sxml"))
          (cached-template (make-pathname (template-cache-path) sxml-name))
