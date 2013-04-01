@@ -1,6 +1,8 @@
 (use civet)
 (use test)
 
+(define default-default-nsmap (make-parameter #f))
+
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE FILE HANDLING  ------------------------------------------
 
@@ -51,6 +53,7 @@ XML
     doc1-raw-sxml
     (begin
       ;; Kill the namespace map
+      (default-default-nsmap (*default-nsmap*))
       (*default-nsmap* '())
       (sleep 1)
       (with-output-to-file "templates/doc1.xml" (lambda () (display doc1-raw-xml)))
@@ -59,6 +62,9 @@ XML
     "Cache file should have been updated in previous step."
     doc1-raw-sxml
     (with-input-from-file "templates/.cache/doc1.sxml" (lambda () (read)))))
+
+;; Restore the namespace map
+(*default-nsmap* (default-default-nsmap))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -742,7 +748,37 @@ XML
          (body
            (p "Should never see the light of day"))))))
 
-(define doc-tr2-3-base
+(define doc-tr2-3-base-xml
+#<<XML
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1"
+    xml:lang="en" lang="en">
+  <head>
+    <title></title>
+  </head>
+  <body>
+    <cvt:block name="a">
+      <p>Block A from the base template.</p>
+    </cvt:block>
+    <cvt:block name="b">
+      <p>Block B from the base template.</p>
+    </cvt:block>
+    <cvt:block name="c">
+      <p>Block C from the base template.</p>
+    </cvt:block>
+    <cvt:block name="d">
+      Block D from the base template.
+    </cvt:block>
+    <cvt:block name="e">
+      <p>Block E from the base template.</p>
+    </cvt:block>
+  </body>
+</html>
+XML
+)
+
+(define doc-tr2-3-base-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
@@ -770,7 +806,23 @@ XML
           (@ (name "e"))
           (p "Block E from the base template."))))))
 
-(define doc-tr2-3-ext1
+(define doc-tr2-3-ext1-xml
+#<<XML
+<cvt:template
+    extends="doc-tr2-3-base.html"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+  <cvt:block name="a">
+    <p>Block A from extension template 1.</p>
+  </cvt:block>
+  <cvt:block name="c">
+    Block C from extension template 1.
+  </cvt:block>
+</cvt:template>
+XML
+)
+
+(define doc-tr2-3-ext1-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
@@ -786,7 +838,23 @@ XML
         (@ (name "c"))
         "Block C from extension template 1."))))
 
-(define doc-tr2-3-ext2
+(define doc-tr2-3-ext2-xml
+#<<XML
+<cvt:template
+    extends="doc-tr2-3-ext1.html"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+  <cvt:block name="c">
+    <p>Block C from extension template 2.</p>
+  </cvt:block>
+  <cvt:block name="e">
+    Block E from extension template 2.
+  </cvt:block>
+</cvt:template>
+XML
+)
+
+(define doc-tr2-3-ext2-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
@@ -832,19 +900,19 @@ XML
     (process-base-template doc-tr2-2 '() ctx-tr2-1))
   (test
     "TR2.03: build-template-set"
-    `(,doc-tr2-3-base 
+    `(,doc-tr2-3-base-sxml
        ((a . (cvt:block (@ (name "a")) (p "Block A from extension template 1.")))
         (c . (cvt:block (@ (name "c")) (p "Block C from extension template 2.")))
         (e . (cvt:block (@ (name "e")) "Block E from extension template 2."))))
     (begin
-      (with-output-to-file "templates/.cache/doc-tr2-3-base.sxml"
-                           (lambda () (write doc-tr2-3-base)))
-      (with-output-to-file "templates/.cache/doc-tr2-3-ext1.sxml"
-                           (lambda () (write doc-tr2-3-ext1)))
-      (with-output-to-file "templates/.cache/doc-tr2-3-ext2.sxml"
-                           (lambda () (write doc-tr2-3-ext2)))
+      (with-output-to-file "templates/doc-tr2-3-base.html"
+                           (lambda () (display doc-tr2-3-base-xml)))
+      (with-output-to-file "templates/doc-tr2-3-ext1.html"
+                           (lambda () (display doc-tr2-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr2-3-ext2.html"
+                           (lambda () (display doc-tr2-3-ext2-xml)))
       (let-values (((base blox)
-                    (build-template-set "tr2-3-ext2.html")))
+                    (build-template-set "doc-tr2-3-ext2.html" (*default-nsmap*))))
         (list base blox)))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
