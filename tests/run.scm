@@ -727,7 +727,7 @@ XML
          (body
            (p "Should never see the light of day"))))))
 
-(define doc-tr2-3
+(define doc-tr2-2
   '(*TOP*
      (@
        (*NAMESPACES* 
@@ -742,16 +742,110 @@ XML
          (body
            (p "Should never see the light of day"))))))
 
+(define doc-tr2-3-base
+  '(*TOP*
+    (@
+      (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+    (html
+      (@
+        (xml:lang "en")
+        (lang "en"))
+      (head (title))
+      (body
+        (cvt:block
+          (@ (name "a"))
+          (p "Block A from the base template."))
+        (cvt:block
+          (@ (name "b"))
+          (p "Block B from the base template."))
+        (cvt:block
+          (@ (name "c"))
+          (p "Block C from the base template."))
+        (cvt:block
+          (@ (name "d"))
+          "Block D from the base template.")
+        (cvt:block
+          (@ (name "e"))
+          (p "Block E from the base template."))))))
+
+(define doc-tr2-3-ext1
+  '(*TOP*
+    (@
+      (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+    (cvt:template
+      (@
+        (extends "tr2-3-base.html"))
+      (cvt:block
+        (@ (name "a"))
+        (p "Block A from extension template 1."))
+      (cvt:block
+        (@ (name "c"))
+        "Block C from extension template 1."))))
+
+(define doc-tr2-3-ext2
+  '(*TOP*
+    (@
+      (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+    (cvt:template
+      (@
+        (extends "tr2-3-ext1.html"))
+      (cvt:block
+        (@ (name "c"))
+        (p "Block C from extension template 2."))
+      (cvt:block
+        (@ (name "e"))
+        "Block E from extension template 2."))))
+
+(define doc-tr2-3-out
+  '(*TOP*
+    (@
+      (*NAMESPACES*
+        (#f "http://www.w3.org/1999/xhtml")
+        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+    (html
+      (@
+        (xml:lang "en")
+        (lang "en"))
+      (head (title))
+      (body
+        (p "Block A from extension template 1.")
+        (p "Block B from the base template.")
+        (p "Block C from extension template 2.")
+        "Block D from the base template."
+        "Block E from extension template 2."))))
+
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
 (test-group "[TR2] Template Sets"
   (test-error
-    "TR2.01: cvt:template with no extension attribute [ERROR]"
+    "TR2.01: cvt:template with no 'extends' attribute [ERROR]"
     (process-base-template doc-tr2-1 '() ctx-tr2-1))
   (test-error
     "TR2.02: cvt:template as descendant of the document element [ERROR]"
-    (process-base-template doc-tr2-1 '() ctx-tr2-1)))
+    (process-base-template doc-tr2-2 '() ctx-tr2-1))
+  (test
+    "TR2.03: build-template-set"
+    `(,doc-tr2-3-base 
+       ((a . (cvt:block (@ (name "a")) (p "Block A from extension template 1.")))
+        (c . (cvt:block (@ (name "c")) (p "Block C from extension template 2.")))
+        (e . (cvt:block (@ (name "e")) "Block E from extension template 2."))))
+    (begin
+      (with-output-to-file "templates/.cache/doc-tr2-3-base.sxml"
+                           (lambda () (write doc-tr2-3-base)))
+      (with-output-to-file "templates/.cache/doc-tr2-3-ext1.sxml"
+                           (lambda () (write doc-tr2-3-ext1)))
+      (with-output-to-file "templates/.cache/doc-tr2-3-ext2.sxml"
+                           (lambda () (write doc-tr2-3-ext2)))
+      (let-values (((base blox)
+                    (build-template-set "tr2-3-ext2.html")))
+        (list base blox)))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
