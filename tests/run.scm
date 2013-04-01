@@ -1,8 +1,9 @@
 (use civet)
 (use test)
+(use posix files)
 (include "test-support.scm")
 
-(define default-default-nsmap (make-parameter #f))
+(create-directory (make-pathname "templates" ".cache") #t)
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE FILE HANDLING  ------------------------------------------
@@ -53,9 +54,6 @@ XML
     "Raw XML file is newer than cached SXML--should load raw version." 
     doc1-raw-sxml
     (begin
-      ;; Kill the namespace map
-      ; (default-default-nsmap (*default-nsmap*))
-      ; (*default-nsmap* '())
       (sleep 1)
       (with-output-to-file "templates/doc1.xml" (lambda () (display doc1-raw-xml)))
       (load-template "doc1.xml" #f)))
@@ -64,8 +62,6 @@ XML
     doc1-raw-sxml
     (with-input-from-file "templates/.cache/doc1.sxml" (lambda () (read)))))
 
-;; Restore the namespace map
-; (*default-nsmap* (default-default-nsmap))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
