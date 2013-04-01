@@ -480,6 +480,9 @@
 (define (extension? template)
   (let ((sp (sxpath '(cvt:template) (*sxpath-nsmap*))))
     (not (null? (sp template)))))
+    ; (let ((result (not (null? (sp template)))))
+     ;  (printf "\nEXTENSION? ~A\n" result)
+      ; result)))
 
 (define (get-parent-name template)
   (let ((sp
@@ -511,8 +514,9 @@
     (let loop ((template (load-template name nsmap))
                (blocks '()))
       (if (extension? template)
-        (let ((parent (get-parent-name template)))
-          (when (null? parent)
+        (let* ((parent* (get-parent-name template))
+               (parent (and (not (null? parent*)) (car parent*))))
+          (when (not parent)
             (eprintf "Parent template '~A' not found.\n" parent))
           (let ((locale (get-template-locale template))
                 (vars (get-template-vars template))
@@ -520,14 +524,14 @@
             (loop
               (load-template parent nsmap)
               (foldl
-                (lambda (k)
+                (lambda (blox k)
                   (if (eqv? (car k) 'cvt:block)
                     (let* ((name* (sp2 k))
                            (name (string->symbol (car name*))))
-                      (if (alist-ref name blocks)
-                        blocks
-                        (cons (cons name (list locale vars k)) blocks)))
-                    blocks))
+                      (if (alist-ref name blox)
+                        blox
+                        (cons (cons name (list locale vars k)) blox)))
+                    blox))
                 blocks kids))))
         (values template blocks)))))
 
