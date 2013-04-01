@@ -63,8 +63,8 @@
                  (blox1 (cadddr head1))
                  (blox2 (cadddr head2)))
             (and (eqv? key1 key2)
-                 (equal? loc1 loc2)
-                 (equal? vars1 vars2)
+                 (sxml=? loc1 loc2)
+                 (sxml=? vars1 vars2)
                  (sxml=? blox1 blox2)
                  (loop (cdr a1*) (cdr a2*)))))))))
 
