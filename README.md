@@ -161,6 +161,9 @@ symbol (except in the case of a default namespace, in which case it should
 be `#f`. NSMAP overrides or extends the list of namespace bindings defined in
 `*default-nsmap*`.
 
+A value of #f for NSMAP will cause the template to be parsed with no
+namespace bindings.
+
 Note that when you load a template, a primitive form of caching is peformed
 behind the scenes. Specifically, whenever you load a new or modified
 template from XML, the resulting SXML document is saved to a file in the
