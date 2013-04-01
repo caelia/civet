@@ -213,10 +213,9 @@
     (let ((nd (nest-depth st)))
       (cond
         ((and (= nd 3) (= (length st) 1)) (car st))
-        ((= nd 3) (map join st))
         ((and (= nd 2) (string? (caar st))) (car st))
         ((<= nd 2) st)
-        (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd))))
+        (else (eprintf "Failed to normalize subtree: ~A" st))))
     st))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
