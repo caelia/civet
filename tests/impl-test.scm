@@ -65,6 +65,7 @@
 ;;; ------  Run tests  -----------------------------------------------------
 
 (test-group "Utility: alist-merge/alist-except"
+  (current-test-comparator alist=?)
   (test "alist-merge with two null lists" al1 (alist-merge al1 al1))
   (test "alist-merge with first list null" al2 (alist-merge al1 al2))
   (test "alist-merge with second list null" al2 (alist-merge al2 al1))
@@ -76,18 +77,15 @@
   (test "alist-except with two null lists" ol5 (alist-except al1 xl1))
   (test "alist-except with a null alist & populated xlist" ol5 (alist-except al1 xl2))
   (test "alist-except, deleting all" ol5 (alist-except al2 xl3))
-  (test "alist-except with populated alist & null xlist" #t
-        (let ((res (alist-except al2 xl1))) (or (alist=? res ol6) res)))
-  (test "alist-except with disjoint xlist" #t
-        (let ((res (alist-except al2 xl2))) (or (alist=? res ol6) res)))
-  (test "alist-except with overlapping xlist" #t
-        (let ((res (alist-except al2 xl4))) (or (alist=? res ol7) res)))
-  (test "alist-except with single-item xlist" #t
-        (let ((res (alist-except al3 xl5))) (or (alist=? res ol8) res)))
-  (test "alist-except -> alist-merge -> alist-merge" #t
-        (let ((res (alist-merge (alist-merge al2 al4) (alist-except al3 xl5)))) (or (alist=? res ol9) res)))
-  (test "alist-merge -> alist-merge -> alist-except" #t
-        (let ((res (alist-except (alist-merge (alist-merge al2 al4) al3) xl4))) (or (alist=? res ol10) res))))
+  (test "alist-except with populated alist & null xlist" ol6 (alist-except al2 xl1))
+  (test "alist-except with disjoint xlist" ol6 (alist-except al2 xl2))
+  (test "alist-except with overlapping xlist" ol7 (alist-except al2 xl4))
+  (test "alist-except with single-item xlist" ol8 (alist-except al3 xl5))
+  (test "alist-except -> alist-merge -> alist-merge" ol9
+        (alist-merge (alist-merge al2 al4) (alist-except al3 xl5)))
+  (test "alist-merge -> alist-merge -> alist-except" ol10
+        (alist-except (alist-merge (alist-merge al2 al4) al3) xl4))
+  (current-test-comparator equal?))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
