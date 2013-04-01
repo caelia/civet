@@ -1,15 +1,22 @@
 (use srfi-13)
 
+;; The first two functions are used by both alist=? and att-list=?
+(define (symbol<? s1 s2)
+  (and (symbol? s1)
+       (symbol? s2)
+       (string<? (symbol->string s1) (symbol->string s2))))
+
+(define (head-sym<? a b)
+  (and (pair? a)
+       (pair? b)
+       (symbol<? (car a) (car b))))
+
 ;; This function finds two alists equal if and only if they contain all
 ;;   the same associations in any order.
 (define (alist=? al1 al2)
-  (and (= (length al1) (length al2))
-       (foldl
-         (lambda (seed elt)
-           (and seed
-                (equal? (assoc (car elt) al2) elt)))
-         #t
-         al1)))
+  (equal?
+    (sort al1 head-sym<?)
+    (sort al2 head-sym<?)))
 
 ;; The SXML=? function finds two SXML objects equal if they contain all
 ;;   the same elements, annotations and text nodes in the same order,
@@ -22,16 +29,6 @@
        (or (string=? tn1 tn2)
            (and ignore-whitespace
                 (string=? (string-trim-both tn1) (string-trim-both tn2))))))
-
-(define (symbol<? s1 s2)
-  (and (symbol? s1)
-       (symbol? s2)
-       (string<? (symbol->string s1) (symbol->string s2))))
-
-(define (head-sym<? a b)
-  (and (pair? a)
-       (pair? b)
-       (symbol<? (car a) (car b))))
 
 (define (att-list=? lst1 lst2)
   (equal? (sort lst1 head-sym<?) (sort lst2 head-sym<?)))
@@ -47,6 +44,30 @@
           (sxml=? (cdr node1) (cdr node2) ignore-whitespace)))
     (else (equal? node1 node2))))
 
+(define (block-data-alist=? a1 a2)
+  (let ((sa1 (sort a1 head-sym<?))
+        (sa2 (sort a2 head-sym<?)))
+    (let loop ((a1* sa1) (a2* sa2))
+      (cond
+        ((and (null? a1*) (null? a2*)) #t)
+        ((or (null? a1*) (null? a2*)) #f)
+        (else
+          (let* ((head1 (car a1*))
+                 (head2 (car a2*))
+                 (key1 (car head1))
+                 (key2 (car head2))
+                 (loc1 (cadr head1))
+                 (loc2 (cadr head2))
+                 (vars1 (caddr head1))
+                 (vars2 (caddr head2))
+                 (blox1 (cadddr head1))
+                 (blox2 (cadddr head2)))
+            (and (eqv? key1 key2)
+                 (equal? loc1 loc2)
+                 (equal? vars1 vars2)
+                 (sxml=? blox1 blox2)
+                 (loop (cdr a1*) (cdr a2*)))))))))
+
 (define (block-data=? bd1 bd2)
   (and (sxml=? (car bd1) (car bd2))
-       (alist=? (cadr bd1) (cadr bd2))))
+       (block-data-alist=? (cadr bd1) (cadr bd2))))

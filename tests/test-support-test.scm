@@ -1,23 +1,7 @@
 (use test)
 (include "test-support.scm")
 
-(test-group "sxml=? support functions"
-  (test
-    "text-node=? with different strings [#f]"
-    #f
-    (text-node=? "abc" "xyz" #t))
-  (test
-    "text-node=? with identical strings [#t]"
-    #t
-    (text-node=? "abc" "abc" #t))
-  (test
-    "text-node=? with whitespace differences not ignored [#f]"
-    #f
-    (text-node=? "abc" "     abc      " #f))
-  (test
-    "text-node=? with whitespace differences ignored [#t]"
-    #t
-    (text-node=? "abc" "     abc      " #t))
+(test-group "common support functions"
   (test
     "symbol<? where one argument is not a symbol [#f]"
     #f
@@ -61,7 +45,47 @@
   (test
     "(head-sym<? '(euphoria 49) '(fenestration)) [#t]"
     #t
-    (head-sym<? '(euphoria 49) '(fenestration)))
+    (head-sym<? '(euphoria 49) '(fenestration))))
+
+(test-group "alist=?"
+  (test
+    "alist=? with identical lists [#t]"
+    #t
+    (alist=? '((r . "robotics") (v . "virginity") (k . "kaleidoscope"))
+             '((r . "robotics") (v . "virginity") (k . "kaleidoscope"))))
+  (test
+    "alist=? with completely different lists [#f]"
+    #f
+    (alist=? '((r . "robotics") (v . "virginity") (k . "kaleidoscope"))
+             '((s . "selenium") (d . "dirge") (x . "xanthium"))))
+  (test
+    "alist=? with the same elements in different orders [#t]"
+    #t
+    (alist=? '((r . "robotics") (v . "virginity") (k . "kaleidoscope") (n . "nostrums") (b . "bogeyman"))
+             '((v . "virginity") (k . "kaleidoscope") (r . "robotics") (b . "bogeyman") (n . "nostrums"))))
+  (test
+    "alist=? with the same keys but different values [#f]"
+    #f
+    (alist=? '((s . "selenium") (d . "dirge") (j . "juniper"))
+             '((s . "sarcasm") (d . "dinar") (j . "jasmine")))))
+
+(test-group "sxml=? support functions"
+  (test
+    "text-node=? with different strings [#f]"
+    #f
+    (text-node=? "abc" "xyz" #t))
+  (test
+    "text-node=? with identical strings [#t]"
+    #t
+    (text-node=? "abc" "abc" #t))
+  (test
+    "text-node=? with whitespace differences not ignored [#f]"
+    #f
+    (text-node=? "abc" "     abc      " #f))
+  (test
+    "text-node=? with whitespace differences ignored [#t]"
+    #t
+    (text-node=? "abc" "     abc      " #t))
   (test
     "att-list=? with identical lists [#t]"
     #t

@@ -1,6 +1,6 @@
 (use test)
 (include "../civet-impl.scm")
-
+(include "test-support.scm")
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  UTILITY FUNCTIONS  -----------------------------------------------
@@ -60,16 +60,6 @@
 (define ol10
   '((a . "aramaic") (b . "butcher") (d . "doldrums") (e . "eschatology")))
 
-;; This function finds two alists equal if and only if they contain all
-;;   the same associations in any order.
-(define (alist=? al1 al2)
-  (and (= (length al1) (length al2))
-       (foldl
-         (lambda (seed elt)
-           (and seed
-                (equal? (assoc (car elt) al2) elt)))
-         #t
-         al1)))
           
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------

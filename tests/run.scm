@@ -1,5 +1,6 @@
 (use civet)
 (use test)
+(include "test-support.scm")
 
 (define default-default-nsmap (make-parameter #f))
 
@@ -53,18 +54,18 @@ XML
     doc1-raw-sxml
     (begin
       ;; Kill the namespace map
-      (default-default-nsmap (*default-nsmap*))
-      (*default-nsmap* '())
+      ; (default-default-nsmap (*default-nsmap*))
+      ; (*default-nsmap* '())
       (sleep 1)
       (with-output-to-file "templates/doc1.xml" (lambda () (display doc1-raw-xml)))
-      (load-template "doc1.xml")))
+      (load-template "doc1.xml" #f)))
   (test
     "Cache file should have been updated in previous step."
     doc1-raw-sxml
     (with-input-from-file "templates/.cache/doc1.sxml" (lambda () (read)))))
 
 ;; Restore the namespace map
-(*default-nsmap* (default-default-nsmap))
+; (*default-nsmap* (default-default-nsmap))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -898,12 +899,13 @@ XML
   (test-error
     "TR2.02: cvt:template as descendant of the document element [ERROR]"
     (process-base-template doc-tr2-2 '() ctx-tr2-1))
+  (current-test-comparator block-data=?)
   (test
     "TR2.03: build-template-set"
     `(,doc-tr2-3-base-sxml
-       ((a . (cvt:block (@ (name "a")) (p "Block A from extension template 1.")))
-        (c . (cvt:block (@ (name "c")) (p "Block C from extension template 2.")))
-        (e . (cvt:block (@ (name "e")) "Block E from extension template 2."))))
+       ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
+        (c . (() () (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
+        (e . (() () (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
     (begin
       (with-output-to-file "templates/doc-tr2-3-base.html"
                            (lambda () (display doc-tr2-3-base-xml)))
@@ -929,5 +931,25 @@ XML
 ;;; ------  Run tests  -----------------------------------------------------
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+
+
+;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+;;; ----  RENDERING  -------------------------------------------------------
+;;; ------  Support data  --------------------------------------------------
+
+;;; ========================================================================
+;;; ------  Run tests  -----------------------------------------------------
+
+(test-group "Rendering"
+  (test-assert
+    "Minimal example: Single template."
+    (render "doc-tr2-3-base.html" (make-context)))
+  (test-assert
+    "Template set with blocks, no variables."
+    (render "doc-tr2-3-ext2.html" (make-context))))
+
+;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
 
 (test-exit)
