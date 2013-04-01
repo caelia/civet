@@ -885,6 +885,100 @@ XML
         "Block D from the base template."
         "Block E from extension template 2."))))
 
+(define doc-tr2-4-ext2-xml
+#<<XML
+<cvt:template
+    extends="doc-tr2-3-ext1.html"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+  <cvt:head>
+    <cvt:defvar name="copyrightStatement">
+      Copyright © <cvt:var name="copyrightYear" /> by <cvt:var name="copyrightHolder" />.
+      <cvt:var name="rightsStatement" />
+    </cvt:defvar>
+  </cvt:head>
+  <cvt:block name="c">
+    <p>Block C from extension template 2.</p>
+  </cvt:block>
+  <cvt:block name="e">
+    Block E from extension template 2.
+  </cvt:block>
+</cvt:template>
+XML
+)
+
+(define doc-tr2-4-ext2-sxml
+  '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
+                          (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt:template (@ (extends "doc-tr2-3-ext1.html"))
+                       (cvt:head
+                         (cvt:defvar (@ (name "copyrightStatement"))
+                                     "\n      Copyright © "
+                                     (cvt:var (@ (name "copyrightYear")))
+                                     " by "
+                                     (cvt:var (@ (name "copyrightHolder")))
+                                     ".\n      "
+                                     (cvt:var (@ (name "rightsStatement")))))
+                       (cvt:block (@ (name "c"))
+                                  (p "Block C from extension template 2."))
+                       (cvt:block (@ (name "e"))
+                                  "\n    Block E from extension template 2.\n  "))))
+
+(define doc-tr2-5-ext2-xml
+#<<XML
+<cvt:template
+    extends="doc-tr2-3-ext1.html"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+  <cvt:head>
+    <cvt:locale lang="ja" country="jp" encoding="shift-jis" />
+    <cvt:defvar name="copyrightStatement">
+      Copyright © <cvt:var name="copyrightYear" /> by <cvt:var name="copyrightHolder" />.
+      <cvt:var name="rightsStatement" />
+    </cvt:defvar>
+    <cvt:defvar name="junk" value="hullo" />
+    <cvt:defvar name="articleURL">
+      <cvt:var name="urlScheme" />://<cvt:var name="host" />/articles/<cvt:var name="articleID" />
+    </cvt:defvar>
+  </cvt:head>
+  <cvt:block name="c">
+    <p>Block C from extension template 2.</p>
+  </cvt:block>
+  <cvt:block name="e">
+    <a cvt:href="articleURL">Check out this great article!</a>
+  </cvt:block>
+</cvt:template>
+XML
+)
+
+(define doc-tr2-5-ext2-sxml
+  '(*TOP* (@ (*NAMESPACES*
+               (#f "http://www.w3.org/1999/xhtml")
+               (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+    (cvt:template
+      (@ (extends "doc-tr2-3-ext1.html"))
+      (cvt:head
+        (cvt:locale (@ (lang "ja") (encoding "shift-jis") (country "jp")))
+        (cvt:defvar (@ (name "copyrightStatement"))
+                    "\n      Copyright © "
+                    (cvt:var (@ (name "copyrightYear")))
+                    " by "
+                    (cvt:var (@ (name "copyrightHolder")))
+                    ".\n      "
+                    (cvt:var (@ (name "rightsStatement"))))
+        (cvt:defvar (@ (value "hullo") (name "junk")))
+        (cvt:defvar (@ (name "articleURL"))
+                    (cvt:var (@ (name "urlScheme")))
+                    "://"
+                    (cvt:var (@ (name "host")))
+                    "/articles/"
+                    (cvt:var (@ (name "articleID")))))
+      (cvt:block (@ (name "c"))
+                 (p "Block C from extension template 2."))
+      (cvt:block (@ (name "e"))
+                 (a (@ (cvt:href "articleURL"))
+                    "Check out this great article!")))))
+
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
@@ -911,7 +1005,95 @@ XML
                            (lambda () (display doc-tr2-3-ext2-xml)))
       (let-values (((base blox)
                     (build-template-set "doc-tr2-3-ext2.html" (*default-nsmap*))))
-        (list base blox)))))
+        (list base blox))))
+  (test
+    "TR2.04: build-template-set with one defvar"
+    `(,doc-tr2-3-base-sxml
+       ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
+        (c . (()
+              ((cvt:defvar
+                 (@ (name "copyrightStatement"))
+                 "Copyright © "
+                 (cvt:var (@ (name "copyrightYear")))
+                 " by "
+                 (cvt:var (@ (name "copyrightHolder")))
+                 ". "
+                 (cvt:var (@ (name "rightsStatement")))))
+              (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
+        (e . (()
+              ((cvt:defvar
+                 (@ (name "copyrightStatement"))
+                 "Copyright © "
+                 (cvt:var (@ (name "copyrightYear")))
+                 " by "
+                 (cvt:var (@ (name "copyrightHolder")))
+                 ". "
+                 (cvt:var (@ (name "rightsStatement")))))
+              (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
+    (begin
+      ; (with-output-to-file "templates/doc-tr2-3-base.html"
+                           ; (lambda () (display doc-tr2-3-base-xml)))
+      ; (with-output-to-file "templates/doc-tr2-3-ext1.html"
+                           ; (lambda () (display doc-tr2-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr2-4-ext2.html"
+                           (lambda () (display doc-tr2-4-ext2-xml)))
+      (let-values (((base blox)
+                    (build-template-set "doc-tr2-4-ext2.html" (*default-nsmap*))))
+        (list base blox))))
+  (test
+    "TR2.05: build-template-set with a locale def and 3 defvars"
+    `(,doc-tr2-3-base-sxml
+       ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
+        (c . ((cvt:locale (@ (lang "ja") (encoding "shift-jis") (country "jp")))
+              ((cvt:defvar
+                 (@ (name "copyrightStatement"))
+                 "\n      Copyright © "
+                 (cvt:var (@ (name "copyrightYear")))
+                 " by "
+                 (cvt:var (@ (name "copyrightHolder")))
+                 ".\n      "
+                 (cvt:var (@ (name "rightsStatement"))))
+               (cvt:defvar
+                 (@ (value "hullo") (name "junk")))
+               (cvt:defvar
+                 (@ (name "articleURL"))
+                 (cvt:var (@ (name "urlScheme")))
+                 "://"
+                 (cvt:var (@ (name "host")))
+                 "/articles/"
+                 (cvt:var (@ (name "articleID")))))
+              (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
+        (e . ((cvt:locale (@ (lang "ja") (encoding "shift-jis") (country "jp")))
+              ((cvt:defvar
+                 (@ (name "copyrightStatement"))
+                 "\n      Copyright © "
+                 (cvt:var (@ (name "copyrightYear")))
+                 " by "
+                 (cvt:var (@ (name "copyrightHolder")))
+                 ".\n      "
+                 (cvt:var (@ (name "rightsStatement"))))
+               (cvt:defvar
+                 (@ (value "hullo") (name "junk")))
+               (cvt:defvar
+                 (@ (name "articleURL"))
+                 (cvt:var (@ (name "urlScheme")))
+                 "://"
+                 (cvt:var (@ (name "host")))
+                 "/articles/"
+                 (cvt:var (@ (name "articleID")))))
+              (cvt:block (@ (name "e")) (a (@ (cvt:href "articleURL")) "Check out this great article!"))))))
+    (begin
+      ; (with-output-to-file "templates/doc-tr2-3-base.html"
+                           ; (lambda () (display doc-tr2-3-base-xml)))
+      ; (with-output-to-file "templates/doc-tr2-3-ext1.html"
+                           ; (lambda () (display doc-tr2-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr2-5-ext2.html"
+                           (lambda () (display doc-tr2-5-ext2-xml)))
+      (let-values (((base blox)
+                    (build-template-set "doc-tr2-5-ext2.html" (*default-nsmap*))))
+        (list base blox))))
+  (current-test-comparator equal?))
+
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
