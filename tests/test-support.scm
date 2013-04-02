@@ -45,8 +45,20 @@
     (else (equal? node1 node2))))
 
 (define (block-data-alist=? a1 a2)
-  (let ((sa1 (sort a1 head-sym<?))
-        (sa2 (sort a2 head-sym<?)))
+  (let* ((sa1 (sort a1 head-sym<?))
+         (sa2 (sort a2 head-sym<?))
+         (var=?
+           (lambda (pair1 pair2)
+             (and (eqv? (car pair1) (car pair2))
+                  (string=? (string-trim-both (cdr pair1))
+                            (string-trim-both (cdr pair2))))))
+         (var-list=?
+           (lambda (lst1* lst2*)
+             (let loop ((lst1 lst1*)
+                        (lst2 lst2*))
+               (or (and (null? lst1) (null? lst2))
+                   (and (var=? (car lst1) (car lst2))
+                        (loop (cdr lst1) (cdr lst2))))))))
     (let loop ((a1* sa1) (a2* sa2))
       (cond
         ((and (null? a1*) (null? a2*)) #t)
@@ -63,8 +75,8 @@
                  (blox1 (cadddr head1))
                  (blox2 (cadddr head2)))
             (and (eqv? key1 key2)
-                 (sxml=? loc1 loc2)
-                 (sxml=? vars1 vars2)
+                 (var-list=? loc1 loc2)
+                 (var-list=? vars1 vars2)
                  (sxml=? blox1 blox2)
                  (loop (cdr a1*) (cdr a2*)))))))))
 
