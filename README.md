@@ -14,11 +14,12 @@ markup from the target document type (e.g., XHTML), which represents literal
 output, combined with markup from the Civet template vocabulary, which
 controls the structure of the output and inserts dynamic content.
 
-A **template set** consists of a **base template** and one or more
-**extension templates**. The base template determines the document type of
-the output and its overall structure. As of Version 0.1, the base template
-is the only one that should include content outside of **blocks**. Any
-content outside of blocks in an extension template will be ignored. 
+A **template set** consists of a **base template** and one or more **extension
+templates**. The base template determines the document type of the output and
+its overall structure. As of Version 0.1, the content of extension templates is
+restricted to metadata contained in a **head** element, and content contained
+in one or more **blocks**. Any content outside of these structures in an
+extension template will be ignored. 
 
 Extension templates are used to specialize various aspects of the base
 template. They may also be chained so as to specialize other extension
@@ -317,10 +318,10 @@ NOTES:
 #### cvt:template
 
 This is the document element for an extension template. As of Version 0.1, a
-`template` element may only contain `config`, `locale`, `defvar`, and
-`block` elements. Any other content will be discarded by the processor.
+`cvt:template` element may only contain `cvt:head`, `cvt:block` elements. Any
+other content will be discarded by the processor.
 
-A base template does **not** use `template`; rather, its document element
+A base template does **not** use `cvt:template`; rather, its document element
 should be the document element required by the target document type.
 
 ##### Context:
@@ -331,9 +332,9 @@ Occurs only as the document element of an extension template.
 
 May contain, in the following order:
 
-- **head** [optional]
+- **cvt:head** [optional]
 
-- **block** [zero or more]
+- **cvt:block** [zero or more]
 
 May not contain text nodes or any markup from the target vocabulary.
 
@@ -356,9 +357,9 @@ First child of the document element of a template.
 
 May contain, in any order:
 
-- **locale** [optional]
+- **cvt:locale** [optional]
 
-- **defvar** [zero or more]
+- **cvt:defvar** [zero or more]
 
 
 ------------------------------------------------------------------------
@@ -395,16 +396,16 @@ Empty.
 #### cvt:defvar
 
 Sets a variable's value within its local scope (i.e. for the template if
-contained in `head`, otherwise within the lexical scope of its parent
+contained in `cvt:head`, otherwise within the lexical scope of its parent
 element).
 
 ##### Context:
 
-Within a `head`, `block`, or `with`.
+Within a `cvt:head`, `cvt:block`, or `cvt:with`.
 
 ##### Content:
 
-Any element other than `template`, `head`, or `block`
+Any element other than `cvt:template`, `cvt:head`, or `cvt:block`
 
 ##### Attributes:
 
@@ -457,8 +458,7 @@ those whose IDs match) among different templates in a set.
   descendant:*
 
   Content defined in the descendant template replaces that defined in the
-  ancestor template. The `super` element may be used to include the content
-  from the ancestor.
+  ancestor template.
 
 ##### Attributes:
 
@@ -472,7 +472,7 @@ those whose IDs match) among different templates in a set.
 
 A placeholder for inserting dynamic content. Variables are generally passed
 by the processor, but may also be defined within the template (see
-`defvar`). Assignment is not supported.
+`cvt:defvar`). Assignment is not supported.
 
 ##### Attributes:
 
@@ -517,11 +517,11 @@ by the processor, but may also be defined within the template (see
 
 #### cvt:if
 
-The basic conditional structure. If the test specified by the `test`
-attribute returns true, all content of the `if` element is written to the
-output; otherwise it is ommitted. May contain an optional `else` element.
+The basic conditional structure. If the test specified by the `test` attribute
+returns true, all content of the `cvt:if` element is written to the output;
+otherwise it is ommitted. May contain an optional `cvt:else` element.
 
-NOTE: The effects of nested `if` elements have not been tested.
+NOTE: The effects of nested `cvt:if` elements have not been tested.
 
 ##### Context:
 
@@ -529,7 +529,7 @@ May be contained within any element, but see above note on nesting.
 
 ##### Contents:
 
-Any element except `template` and `block`.
+Any element except `cvt:template` and `cvt:block`.
 
 ##### Attributes:
 
@@ -566,7 +566,7 @@ expression, and between any two tokens.
 
 #### cvt:else
 
-The content of this element is output if the `if` test fails.
+The content of this element is output if the `cvt:if` test fails.
 
 
 ------------------------------------------------------------------------
@@ -605,9 +605,9 @@ template.
 
 ##### Content:
 
-Should contain one or more &lt;defvar&gt; elements [otherwise the `with`
-element serves no purpose], followed by any other elements (except `block`
-and `template`).
+Should contain one or more &lt;defvar&gt; elements [otherwise the `cvt:with`
+element serves no purpose], followed by any other elements (except `cvt:block`
+and `cvt:template`).
 
 ##### Attributes:
 
@@ -628,8 +628,8 @@ Any element from the target vocabulary.
 
 ##### Content:
 
-A string, or an expression that evaluates to a string (such as a `var` element
-with a string value).
+A string, or an expression that evaluates to a string (such as a `cvt:var`
+element with a string value).
 
 ##### Attributes:
 
@@ -637,7 +637,7 @@ with a string value).
 
 - **type** [optional, default: string]
 
-- **var**  [optional] Either this attribute or a `var` child element must be
+- **var**  [optional] Either this attribute or a `cvt:var` child element must be
   present.
 
 
@@ -654,8 +654,8 @@ If you require any more complex manipulations, such as converting lists or
 objects to strings, or conditional processing, you must use the `attr`
 element.
 
-If an element has an attribute prefixed in this manner, and an `attr`
-element child, the `attr` element overrides the prefixed attribute.
+If an element has an attribute prefixed in this manner, and a `cvt:attr`
+element child, the `cvt:attr` element overrides the prefixed attribute.
 
 
 Template Processors
