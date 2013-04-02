@@ -5,3 +5,4 @@
 *.import.scm
 templates
 examples/.cache/*
+tests/*.html
