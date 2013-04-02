@@ -504,8 +504,9 @@
              (read input))))
     (close-input-port input)
     (when update?
-      (with-output-to-file
-        cached-template
+      (when (not (file-exists? (template-cache-path)))
+        (create-directory (template-cache-path) #t))
+      (with-output-to-file cached-template
         (lambda ()
           (write sxml))))
     sxml))
