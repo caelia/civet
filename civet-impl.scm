@@ -171,52 +171,19 @@
     (nest-depth (car obj) (+ depth 1))
     depth))
 
-;; FIXME: don't understand why this isn't working.
-; (define (normalize-subtree st)
-;   (let ((st* (filter identity st)))
-;   (cond
-;     ((string? st*) st*)
-;     ((list? st*)
-;      (let ((sd (symbol-depth st*)))
-;        (when sd
-;          (cond
-;            ((and (= sd 3) (= (length st*) 1))
-;             (normalize-subtree (car st*)))
-;            ((= sd 2)
-;             (map normalize-subtree st*))
-;            ((and (= sd 1)
-;                  (or (null? (cdr st*))
-;                      (string? (cadr st*))
-;                      (list? (cadr st*))))
-;             st*)))))
-;     (else
-;       (eprintf "Failed to normalize subtree! ~A" st*))))
-;   )
-
-; (define (normalize-subtree st)
-  ; (filter identity st))
-
-; (define (normalize-subtree st*)
-;   (cond
-;     ((string? st*) st*)
-;     ((list? st*)
-;      (let* ((st (filter identity st*))
-;             (sd (symbol-depth st)))
-;        (if (and sd (>= sd 3) (= (length st) 1))
-;          (normalize-subtree (car st))
-;          st)))
-;     (else
-;       (eprintf "Failed to normalize subtree: ~A" st*))))
-
 (define (normalize-subtree st)
   (if (list? st)
-    (let ((nd (nest-depth st)))
-      (cond
-        ((and (= nd 3) (= (length st) 1)) (car st))
-        ((= nd 3) (map join st))
-        ((and (= nd 2) (string? (caar st))) (car st))
-        ((<= nd 2) st)
-        (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd))))
+    (filter
+      (lambda (elt)
+        (and elt (not (null? elt))))
+      (let ((nd (nest-depth st)))
+        (cond
+          ((and (> nd 3) (= (length st) 1)) (normalize-subtree (car st)))
+          ((and (= nd 3) (= (length st) 1)) (car st))
+          ((= nd 3) (map join st))
+          ((and (= nd 2) (string? (caar st))) (car st))
+          ((<= nd 2) st)
+          (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd)))))
     st))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
@@ -443,36 +410,6 @@
                   blocks: (alist-merge (alist-except prev-blocks -blocks) +blocks)
                   state: (or state prev-state))))
 
-; (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
-;                           (-attrs #f) (+nsmap #f) (-nsmap #f)
-;                           (+locale #f) (-locale #f) (+blocks #f)
-;                           (-blocks #f) (state #f))
-;   (let ((prev-vars (ctx 'get-vars))
-;         (prev-attrs (ctx 'get-attrs))
-;         (prev-nsmap (ctx 'get-nsmap))
-;         (prev-locale (ctx 'get-locale))
-;         (prev-blocks (ctx 'get-blocks))
-;         (prev-state (ctx 'get-state)))
-;     (let ((nuvars (alist-merge (alist-except prev-vars -vars) +vars))
-;           (nuattrs (alist-merge (alist-except prev-attrs -attrs) +attrs))
-;           (nunsmap (alist-merge (alist-except prev-nsmap -nsmap) +nsmap))
-;           (nulocale (alist-merge (alist-except prev-locale -locale) +locale))
-;           (nublocks (alist-merge (alist-except prev-blocks -blocks) +blocks))
-;           (nustate (or state prev-state)))
-;       (print "\n[PREV-STATE]")
-;       (pp prev-state)
-;       (print "\n[STATE]")
-;       (pp state)
-;       (print "\n[NUSTATE]")
-;       (pp nustate)
-;       (print "\n[PREV-BLOCKS]")
-;       (pp prev-blocks)
-;       (print "\n[+BLOCKS]")
-;       (pp +blocks)
-;       (print "\n[NUBLOCKS]")
-;       (pp nublocks)
-;       (make-context vars: nuvars attrs: nuattrs locale: nulocale blocks: nublocks state: nustate))))
-
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
@@ -634,20 +571,23 @@
          (content (get-kids node))
          (block-name (string->symbol (get-attval attrs "name")))
          (override (ctx 'get-block block-name)))
-    (if override
-      (let ((block-locale (car override))
-            (block-vars (cadr override))
-            (block (caddr override)))
-        (%cvt:block
-          block
-          (context->context
-            ctx
-            -blocks: (list block-name)
-            +locale: block-locale
-            +vars: block-vars)))
-      (process-tree
-        content
-        (context->context ctx state: 'block)))))
+    (cond
+      ((null? content) #f)
+      (override
+        (let ((block-locale (car override))
+              (block-vars (cadr override))
+              (block (caddr override)))
+          (%cvt:block
+            block
+            (context->context
+              ctx
+              -blocks: (list block-name)
+              +locale: block-locale
+              +vars: block-vars))))
+      (else
+        (process-tree
+          content
+          (context->context ctx state: 'block))))))
 
 
 (define (%cvt:var elt ctx)
@@ -679,7 +619,9 @@
              (se node))))
     (cond
       (test-result
+        (normalize-subtree
         (process-tree content (context->context ctx test: #t)))
+        )
       ((and (not test-result) else-node)
        (%cvt:else (car else-node) ctx))
       (else
@@ -877,6 +819,7 @@
                 ;; attributes are handled by the handler for their element
                 (cond
                   ((eqv? head '@) #f)
+                  ; ((eqv? head '*PI*) tree)
                   ((or (eqv? head '*TOP*)
                        (eqv? head '*PI*)
                        (eqv? head '*NAMESPACES*))
@@ -915,14 +858,14 @@
            (eqv? head '*COMMENT*)  ; I'm not sure whether this is ever used, but it doesn't hurt to include it
            (eqv? head '@))
        (assert (eqv? (context 'get-state) 'top))
-       (cons head (process-tree tail context)))
+       ; (cons head (process-tree tail context)))
+       template)
       ((cvt-name? head context)
-       (eprintf "The document element of the base template is '~A', which is invalid."))
+       (eprintf "The document element of the base template is '~A', which is invalid." head))
       (else
         (assert (eqv? (context 'get-state) 'top))
         (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
           (%element template child-ctx))))))
-          ;(cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
   (let-values (((template block-data) (build-template-set name context)))
