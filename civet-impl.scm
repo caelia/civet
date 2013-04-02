@@ -365,66 +365,65 @@
 ;;     init template head block
 (define (make-context #!key (vars '()) (attrs '()) (nsmap (*default-nsmap*))
                       (locale '()) (blocks '()) (state 'init))
-  (let ((blocks '()))
-    (lambda (cmd . args)
-      (case cmd
-        ((set-var!)
-         (alist-update! (car args) (cadr args) vars))
-        ((update-vars!)
-         (set! vars (alist-merge vars args))) 
-        ((set-vars!)
-         (set! vars args))
-        ((get-var)
-         (alist-ref (car args) vars))
-        ((get-vars)
-         vars)
-        ((get-field)
-         (let ((obj (alist-ref (car args) vars)))
-           (and obj
-                (alist-ref (cadr args) obj))))
-        ((pfx->uri)
-         (alist-ref (car args) nsmap))
-        ((uri->pfx)
-         (let ((pair (rassoc (car args) nsmap equal?)))
-           (if pair (car pair) #:UNDEFINED)))
-        ((set-ns!)
-         (alist-update! (car args) (cadr args) nsmap))
-        ((update-nsmap!)
-         (set! nsmap (alist-merge nsmap args)))
-        ((set-nsmap!)
-         (set! nsmap args))
-        ((get-nsmap)
-         nsmap)
-        ((set-attrs!)
-         (set! attrs args))
-        ((set-attr!)
-         (alist-update! (car args) (cadr args) attrs))
-        ((get-attrs)
-         attrs)
-        ((delete-attrs!)
-         (set! attrs '()))
-        ((get-block)
-         (alist-ref (car args) blocks))
-        ((set-block!)
-         (alist-update! (car args) (cadr args) blocks))
-        ((get-blocks)
-         blocks)
-        ((set-locale!)
-         (set! locale (car args)))
-        ((set-lang!)
-         (alist-update! 'lang (car args) locale))
-        ((set-country!)
-         (alist-update! 'country (car args) locale))
-        ((set-encoding!)
-         (alist-update! 'encoding (car args) locale))
-        ((set-date-format!)
-         (alist-update! 'date-format (car args) locale))
-        ((get-locale)
-         locale)
-        ((set-state!)
-         (set! state (car args)))
-        ((get-state)
-         state)))))
+  (lambda (cmd . args)
+    (case cmd
+      ((set-var!)
+       (alist-update! (car args) (cadr args) vars))
+      ((update-vars!)
+       (set! vars (alist-merge vars args))) 
+      ((set-vars!)
+       (set! vars args))
+      ((get-var)
+       (alist-ref (car args) vars))
+      ((get-vars)
+       vars)
+      ((get-field)
+       (let ((obj (alist-ref (car args) vars)))
+         (and obj
+              (alist-ref (cadr args) obj))))
+      ((pfx->uri)
+       (alist-ref (car args) nsmap))
+      ((uri->pfx)
+       (let ((pair (rassoc (car args) nsmap equal?)))
+         (if pair (car pair) #:UNDEFINED)))
+      ((set-ns!)
+       (alist-update! (car args) (cadr args) nsmap))
+      ((update-nsmap!)
+       (set! nsmap (alist-merge nsmap args)))
+      ((set-nsmap!)
+       (set! nsmap args))
+      ((get-nsmap)
+       nsmap)
+      ((set-attrs!)
+       (set! attrs args))
+      ((set-attr!)
+       (alist-update! (car args) (cadr args) attrs))
+      ((get-attrs)
+       attrs)
+      ((delete-attrs!)
+       (set! attrs '()))
+      ((get-block)
+       (alist-ref (car args) blocks))
+      ((set-block!)
+       (alist-update! (car args) (cadr args) blocks))
+      ((get-blocks)
+       blocks)
+      ((set-locale!)
+       (set! locale (car args)))
+      ((set-lang!)
+       (alist-update! 'lang (car args) locale))
+      ((set-country!)
+       (alist-update! 'country (car args) locale))
+      ((set-encoding!)
+       (alist-update! 'encoding (car args) locale))
+      ((set-date-format!)
+       (alist-update! 'date-format (car args) locale))
+      ((get-locale)
+       locale)
+      ((set-state!)
+       (set! state (car args)))
+      ((get-state)
+       state))))
 
 
 (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
@@ -443,6 +442,36 @@
                   locale: (alist-merge (alist-except prev-locale -locale) +locale)
                   blocks: (alist-merge (alist-except prev-blocks -blocks) +blocks)
                   state: (or state prev-state))))
+
+; (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
+;                           (-attrs #f) (+nsmap #f) (-nsmap #f)
+;                           (+locale #f) (-locale #f) (+blocks #f)
+;                           (-blocks #f) (state #f))
+;   (let ((prev-vars (ctx 'get-vars))
+;         (prev-attrs (ctx 'get-attrs))
+;         (prev-nsmap (ctx 'get-nsmap))
+;         (prev-locale (ctx 'get-locale))
+;         (prev-blocks (ctx 'get-blocks))
+;         (prev-state (ctx 'get-state)))
+;     (let ((nuvars (alist-merge (alist-except prev-vars -vars) +vars))
+;           (nuattrs (alist-merge (alist-except prev-attrs -attrs) +attrs))
+;           (nunsmap (alist-merge (alist-except prev-nsmap -nsmap) +nsmap))
+;           (nulocale (alist-merge (alist-except prev-locale -locale) +locale))
+;           (nublocks (alist-merge (alist-except prev-blocks -blocks) +blocks))
+;           (nustate (or state prev-state)))
+;       (print "\n[PREV-STATE]")
+;       (pp prev-state)
+;       (print "\n[STATE]")
+;       (pp state)
+;       (print "\n[NUSTATE]")
+;       (pp nustate)
+;       (print "\n[PREV-BLOCKS]")
+;       (pp prev-blocks)
+;       (print "\n[+BLOCKS]")
+;       (pp +blocks)
+;       (print "\n[NUBLOCKS]")
+;       (pp nublocks)
+;       (make-context vars: nuvars attrs: nuattrs locale: nulocale blocks: nublocks state: nustate))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -496,25 +525,43 @@
     (sp template)))
 
 (define (get-template-locale template)
-  (let* ((sp (sxpath '(cvt:template cvt:locale @ *any*) (*sxpath-nsmap*)))
+  (let* ((sp (sxpath '(cvt:template cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
          (locale-data (sp template)))
     (map
       (lambda (elt) (cons (car elt) (cadr elt)))
       locale-data)))
 
-(define (get-template-vars template)
+(define (get-template-vars template ctx)
   (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*)))
-        (sp2 (sxpath '(@ name *text*))))
-    (map
-      (lambda (def)
-        (let* ((name* (sp2 def))
-               (name (string->symbol (car name*))))
-          (cons name def)))
-      (sp1 template))))
+        (name-exp (sxpath '(@ name *text*)))
+        (val-exp (sxpath '(@ value *text*)))
+        (kids-exp (sxpath '(*any*))))
+    (filter
+      identity
+      (map
+        (lambda (def)
+          (let* ((name* (name-exp def))
+                 (name (string->symbol (car name*)))
+                 (value* (val-exp def))
+                 (kids (kids-exp def))
+                 (value
+                   (cond
+                     ((not (null? value*)) (car value*))
+                     ((not (null? kids))
+                      (let ((kids-result (process-tree kids ctx)))
+                        (if (every string? kids-result)
+                          (apply string-append kids-result)
+                          kids-result)))
+                     (else #f))))
+            (if value 
+              (cons name value)
+              #f)))
+        (sp1 template)))))
 
-(define (build-template-set name #!optional (nsmap '()))
+(define (build-template-set name ctx)
   (let ((sp1 (sxpath '(cvt:template *)))
-        (sp2 (sxpath '(@ name *text*))))
+        (sp2 (sxpath '(@ name *text*)))
+        (nsmap (ctx 'get-nsmap)))
     (let loop ((template (load-template name nsmap))
                (blocks '()))
       (if (extension? template)
@@ -523,7 +570,7 @@
           (when (not parent)
             (eprintf "Parent template '~A' not found.\n" parent))
           (let ((locale (get-template-locale template))
-                (vars (get-template-vars template))
+                (vars (get-template-vars template ctx))
                 (kids (sp1 template)))
             (loop
               (load-template parent nsmap)
@@ -584,12 +631,19 @@
 (define (%cvt:block node ctx)
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
-         (block-name (get-attval attrs "name"))
+         (block-name (string->symbol (get-attval attrs "name")))
          (override (ctx 'get-block block-name)))
     (if override
-      (%cvt:block
-        override
-        (context->context ctx -blocks: (list block-name)))
+      (let ((block-locale (car override))
+            (block-vars (cadr override))
+            (block (caddr override)))
+        (%cvt:block
+          block
+          (context->context
+            ctx
+            -blocks: (list block-name)
+            +locale: block-locale
+            +vars: block-vars)))
       (process-tree
         content
         (context->context ctx state: 'block)))))
@@ -833,41 +887,6 @@
                     (eprintf "Node not handled: ~A\n" head)))))))))))
 
 
-(define (process-content content ctx)
-  ;; content = any content nodes not processed by higher-level handlers
-  ;; ctx = context provided by template or block
-  ;; 1. process all child nodes
-  ;; 2. return result
-  ;;
-  #f)
-
-(define (process-block block block-data ctx)
-  ;; block = the block to be processed
-  ;; block-data = alist of blocks
-  ;; ctx = context from template level
-  ;;
-  ;; 1. push state 'block
-  ;; 2. check for same block in block-data. If found, remove block from block-data
-  ;;    & recurse w/ overriding block
-  ;; 3. process content w/ process-content
-  ;; 4. pop state
-  ;; 5. return transformed content
-  ;;
-  #f)
-
-
-(define (process-head head context)
-  ;; head = cvt:head element
-  ;; context = as provided by template
-  ;;
-  ;; 1. push state 'head
-  ;; 2. read locale data
-  ;; 3. read defvars
-  ;; 4. pop state
-  ;; 5. return new context
-  ;;
-  #f)
-
 (define (process-base-template template block-data context)
   ;; template = entire base template SXML
   ;; block-data = alist of blocks
@@ -905,23 +924,11 @@
           ;(cons head (process-tree tail child-ctx)))))))
 
 (define (process-template-set name context)
-  (let-values (((template block-data) (build-template-set name (context 'get-nsmap))))
+  (let-values (((template block-data) (build-template-set name context)))
     (process-base-template template block-data context)))
 
 (define (render template-name context #!key (port #f) (file #f))
   (let ((final-tree (process-template-set template-name context)))
     (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*))))
 
-
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-
-
-;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
-;;; ------------------------------------------------------------------------
-
-;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-
-;;; ========================================================================
-;;; ------------------------------------------------------------------------
-
-
