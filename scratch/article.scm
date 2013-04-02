@@ -3,7 +3,7 @@
 (define my-vars
   '((urlScheme . "http") (hostName . "blog.therebetygers.net")
     (articleID . "deadbeef") (jquerySrc . "/scripts/jquery.js")
-    (bodyMD . "Lorem Ipsum bla bla bla.") (canEdit . "true")
+    (bodyMD . "Some Markdown") (canEdit . #t)
     (bodyClasses . "SingleArticle BlogPost")
     (htmlTitle . "Article Pagina") (seriesTitle . "Legendary Cheeses")
     (partNo . "41") (articleTitle . "Gjetost")
@@ -15,4 +15,5 @@
 
 (define my-context (make-context vars: my-vars))
 
-(render "article.html" my-context file: "article1.html")
+; (render "article.html" my-context file: "article1.html")
+(process-template-set "article.html" my-context)
