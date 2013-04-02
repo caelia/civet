@@ -148,9 +148,10 @@ This function takes an SXML template, TEMPLATE, and an alist containing SXML
 blocks (which generally will have been read from extension templates, but
 could potentially be created programmatically), and a CONTEXT object, and
 returns a transformed SXML document. The BLOCK-DATA alist consists of
-`'((NAME . BLOCK) ...), where NAME corresponds to the name of a block in the
-base template, and BLOCK is an SXML fragment consisting of a `cvt:block`
-element and its content.
+`'((NAME . (LOCALE VARS BLOCK)) ...), where NAME corresponds to the name of
+a block in the source template, LOCALE and VARS are, respectively, locale
+options and variables read from the template, and BLOCK is an SXML fragment
+consisting of a `cvt:block` element and its content.
 
 #### [procedure]  `(load-template NAME #!optional (NSMAP '())`
 
@@ -257,9 +258,9 @@ or set any values, the closure responds to the following messages:
 
 #### [procedure]  `(context->context CONTEXT KWARGS)`
 
-Returns a new context object based on the existing one, with the same data
-as the original except as modified by the KWARGS. The following keyword
-arguments are supported.
+Returns a new context object based on the existing one, with all its data
+copied from the original except as modified by the KWARGS. The following
+keyword arguments are supported.
 
 - **+vars**    Updates or sets one or more variables. Takes an alist.
 
@@ -295,18 +296,25 @@ you find ambiguous or insufficiently clear.
 
 Also, each element description includes a **Contents** subsection,
 describing what child nodes are required or allowed. However, for all
-elements, unless otherwise noted, markup from the target vocabulary is
+elements, unless otherwise noted, markup from the target vocabulary is 
 permitted within any element of the template vocabulary, and comments and
 processing instructions are unrestricted.
 
-Please note also, that while all elements described are handled by the
-processor and should not cause errors, some (e.g. locale) do not actually do
-anything.
+NOTES:
+
+* This document uses the `cvt:` namespace prefix in all element
+  descriptions. Bear in mind that, as with all XML namespace prefixes, this
+  is merely a convention (and is the default prefix supported by the Scheme
+  library), and you may use a different prefix in your code and templates.
+
+* While all elements described [except **cvt:with**] are handled by the
+  processor and should not cause errors, some (e.g. locale) do not actually
+  do anything.
 
 
 ### ELEMENTS
 
-#### template
+#### cvt:template
 
 This is the document element for an extension template. As of Version 0.1, a
 `template` element may only contain `config`, `locale`, `defvar`, and
@@ -336,7 +344,7 @@ May not contain text nodes or any markup from the target vocabulary.
 
 ------------------------------------------------------------------------
 
-#### head
+#### cvt:head
 
 Contains elements that set variables and/or configure processing behavior.
 
@@ -355,7 +363,7 @@ May contain, in any order:
 
 ------------------------------------------------------------------------
 
-#### locale
+#### cvt:locale
 
 May be used to determine locale options within a template. Currently has no
 effect. I'm not sure if this element should be supported or not. Certainly,
@@ -384,7 +392,7 @@ Empty.
 
 ------------------------------------------------------------------------
 
-#### defvar
+#### cvt:defvar
 
 Sets a variable's value within its local scope (i.e. for the template if
 contained in `head`, otherwise within the lexical scope of its parent
@@ -414,7 +422,7 @@ Any element other than `template`, `head`, or `block`
 
 ------------------------------------------------------------------------
 
-#### block
+#### cvt:block
 
 A *block* is the basic unit of document structure, and may contain any type
 of content, or be empty. The order of blocks within the document (and of any
@@ -460,7 +468,7 @@ those whose IDs match) among different templates in a set.
 
 ------------------------------------------------------------------------
 
-#### var
+#### cvt:var
 
 A placeholder for inserting dynamic content. Variables are generally passed
 by the processor, but may also be defined within the template (see
@@ -507,7 +515,7 @@ by the processor, but may also be defined within the template (see
 
 ------------------------------------------------------------------------
 
-#### if
+#### cvt:if
 
 The basic conditional structure. If the test specified by the `test`
 attribute returns true, all content of the `if` element is written to the
@@ -556,14 +564,14 @@ expression, and between any two tokens.
 
 ------------------------------------------------------------------------
 
-#### else
+#### cvt:else
 
 The content of this element is output if the `if` test fails.
 
 
 ------------------------------------------------------------------------
 
-#### for
+#### cvt:for
 
 Iterate over a list variable.
 
@@ -586,7 +594,7 @@ Iterate over a list variable.
 
 ------------------------------------------------------------------------
 
-#### with
+#### cvt:with
 
 A container for variable definitions.
 
@@ -608,7 +616,7 @@ None.
 
 ------------------------------------------------------------------------
 
-#### attr
+#### cvt:attr
 
 Sets an attribute on its parent element. If the literal attribute is already
 defined on the parent, the value specified by this element overrides it.
