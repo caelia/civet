@@ -50,7 +50,9 @@
     </script>
   </cvt:block>
 
+  <!--
   <cvt:block name="bodyClass">SingleArticle</cvt:block>
+  -->
   
   <cvt:block name="headerContent">
     <h1>S I N G L E   A R T I C L E   P A G E</h1>
@@ -65,7 +67,7 @@
       <h4 id="seriesTitle"><cvt:var name="seriesTitle"/><cvt:if test="partNo">, Part <cvt:var name="partNo"/></cvt:if></h4>
     </cvt:if>
     <h3 id="articleTitle"><cvt:var name="articleTitle"/></h3>
-    <cvt:if test="subTitle">
+    <cvt:if test="articleSubTitle">
       <h5 id="articleSubTitle"><cvt:var name="articleSubTitle"/></h5>
     </cvt:if>
     <div id="articleBody">
