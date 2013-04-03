@@ -308,9 +308,8 @@ NOTES:
   is merely a convention (and is the default prefix supported by the Scheme
   library), and you may use a different prefix in your code and templates.
 
-* While all elements described [except **cvt:with**] are handled by the
-  processor and should not cause errors, some (e.g. locale) do not actually
-  do anything.
+* While all elements described are handled by the processor and should not
+  cause errors, some (e.g. locale) do not actually do anything.
 
 
 ### ELEMENTS
