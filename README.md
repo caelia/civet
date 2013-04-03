@@ -42,88 +42,6 @@ we use the prefix `cvt`.
 Scheme API
 ----------
 
-### PARAMETERS
-
-#### [parameter] \*site-path\*
-
-The root directory of your web site. The template path is automatically
-calculated from this path unless you set `*template-path*`. If the value
-of this parameter is `#f`, the processor assumes that the current working
-directory is the site path; likewise, if you set a relative path, that path
-is assumed to be relative to the current directory. Therefore it is a good
-idea to set this parameter to an absolute path.
-
-**Default:** `#f`
-
-#### [parameter] \*template-path\*
-
-The directory where templates are stored. If the parameter is set to
-`#f`, the processor will look for templates in a `templates` subdirectory of
-the site path. Storing templates in subdirectories of the template path is
-not currently supported.
-
-**Default:** `#f`
-
-#### [parameter] \*template-cache-path\*
-
-The directory where cached SXML templates are stored. If it is set to `#f`,
-cached templates will be searched for in a `.cache` subdirectory of the
-template path.
-
-**Default:** `#f`
-
-#### [parameter] \*enable-l10n\*
-
-Enable localization? Currently has no effect.
-
-**Default:** `#f`
-
-#### [parameter] \*civet-ns-prefix\*
-
-A symbol representing the prefix to be used for Civet vocabulary elements.
-Do not override this unless you are actually using a different prefix in
-your templates.
-
-**Default:** `'cvt`
-
-#### [parameter] \*civet-ns-uri\*
-
-The namespace URI for Civet vocabulary elements. Overriding this is not
-recommended.
-
-**Default:** `"http://xmlns.therebetygers.net/civet/0.1"`
-
-#### [parameter] \*default-nsmap\*
-
-The default namespace map to be used when loading XML templates.
-
-**Default:**
-
-    `((#f . "http://www.w3.org/1999/xhtml")
-      (,(*civet-ns-prefix*) . ,(*civet-ns-uri*)))))
-
-#### [parameter] \*sxpath-nsmap\*
-
-The default namespace map to be used for SXPath expressions and
-serialization.
-
-**Default:**
-
-    `((*default* . "http://www.w3.org/1999/xhtml")
-      (,(*civet-ns-prefix*) . ,(*civet-ns-uri*)))
-
-#### [parameter] \*sort-functions\*
-
-A mapping from data type symbols to sorting functions to be used in `for`
-loops. For each "built-in" data type there are two functions specified: the
-first is used for ascending sorts, the second for descending.
-
-**Default:**
-
-    `((string . (,string<? ,string>?))
-      (char . (,char<? ,char>?))
-      (number . (,< ,>))
-      (boolean . (,(lambda (a b) (or (not a) b)) ,(lambda (a b) (or a (not b))))))
 
 ### PROCEDURES
 
@@ -284,6 +202,89 @@ keyword arguments are supported.
 - **-blocks**  Unsets one or more template blocks. Takes a list of symbols.
 
 - **state**    Sets the state. Takes a symbol
+
+### PARAMETERS
+
+#### [parameter] \*site-path\*
+
+The root directory of your web site. The template path is automatically
+calculated from this path unless you set `*template-path*`. If the value
+of this parameter is `#f`, the processor assumes that the current working
+directory is the site path; likewise, if you set a relative path, that path
+is assumed to be relative to the current directory. Therefore it is a good
+idea to set this parameter to an absolute path.
+
+**Default:** `#f`
+
+#### [parameter] \*template-path\*
+
+The directory where templates are stored. If the parameter is set to
+`#f`, the processor will look for templates in a `templates` subdirectory of
+the site path. Storing templates in subdirectories of the template path is
+not currently supported.
+
+**Default:** `#f`
+
+#### [parameter] \*template-cache-path\*
+
+The directory where cached SXML templates are stored. If it is set to `#f`,
+cached templates will be searched for in a `.cache` subdirectory of the
+template path.
+
+**Default:** `#f`
+
+#### [parameter] \*enable-l10n\*
+
+Enable localization? Currently has no effect.
+
+**Default:** `#f`
+
+#### [parameter] \*civet-ns-prefix\*
+
+A symbol representing the prefix to be used for Civet vocabulary elements.
+Do not override this unless you are actually using a different prefix in
+your templates.
+
+**Default:** `'cvt`
+
+#### [parameter] \*civet-ns-uri\*
+
+The namespace URI for Civet vocabulary elements. Overriding this is not
+recommended.
+
+**Default:** `"http://xmlns.therebetygers.net/civet/0.1"`
+
+#### [parameter] \*default-nsmap\*
+
+The default namespace map to be used when loading XML templates.
+
+**Default:**
+
+    `((#f . "http://www.w3.org/1999/xhtml")
+      (,(*civet-ns-prefix*) . ,(*civet-ns-uri*)))))
+
+#### [parameter] \*sxpath-nsmap\*
+
+The default namespace map to be used for SXPath expressions and
+serialization.
+
+**Default:**
+
+    `((*default* . "http://www.w3.org/1999/xhtml")
+      (,(*civet-ns-prefix*) . ,(*civet-ns-uri*)))
+
+#### [parameter] \*sort-functions\*
+
+A mapping from data type symbols to sorting functions to be used in `for`
+loops. For each "built-in" data type there are two functions specified: the
+first is used for ascending sorts, the second for descending.
+
+**Default:**
+
+    `((string . (,string<? ,string>?))
+      (char . (,char<? ,char>?))
+      (number . (,< ,>))
+      (boolean . (,(lambda (a b) (or (not a) b)) ,(lambda (a b) (or a (not b))))))
 
 
 Template Vocabulary, version 0.1
