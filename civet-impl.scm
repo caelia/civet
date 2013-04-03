@@ -27,7 +27,6 @@
 (use ssax)
 (use sxpath)
 (use sxml-serializer)
-(use matchable)
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  GLOBAL DEFINITIONS  ----------------------------------------------
