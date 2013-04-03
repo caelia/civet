@@ -337,11 +337,11 @@ other content will be discarded by the processor.
 A base template does '''not''' use {{cvt:template}}; rather, its document element
 should be the document element required by the target document type.
 
-===== Context:
+'''Context:'''
 
 Occurs only as the document element of an extension template.
 
-===== Content:
+'''Content:'''
 
 May contain, in the following order:
 
@@ -351,7 +351,7 @@ May contain, in the following order:
 
 May not contain text nodes or any markup from the target vocabulary.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{extends}} [required] Contains a reference to the parent template,
   expressed as a system file path.
@@ -362,11 +362,11 @@ May not contain text nodes or any markup from the target vocabulary.
 
 Contains elements that set variables and/or configure processing behavior.
 
-===== Context:
+'''Context:'''
 
 First child of the document element of a template.
 
-===== Contents:
+'''Contents:'''
 
 May contain, in any order:
 
@@ -385,15 +385,15 @@ locale options are useful at the application level, but not necessarily
 within a template, so this element will probably be discontinued if it does
 not prove useful in the near future.
 
-===== Context:
+'''Context:'''
 
 Within {{head}}.
 
-===== Content:
+'''Content:'''
 
 Empty.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{lang}}
 
@@ -412,15 +412,15 @@ Sets a variable's value within its local scope (i.e. for the template if
 contained in {{cvt:head}}, otherwise within the lexical scope of its parent
 element).
 
-===== Context:
+'''Context:'''
 
 Within a {{cvt:head}}, {{cvt:block}}, or {{cvt:with}}.
 
-===== Content:
+'''Content:'''
 
 Any element other than {{cvt:template}}, {{cvt:head}}, or {{cvt:block}}
 
-===== Attributes:
+'''Attributes:'''
 
 * {{name}} [required] The variable name to set.
 
@@ -457,23 +457,23 @@ those whose IDs match) among different templates in a set.
 
 * ''Defined with content in ancestor template, omitted in descendant:''
 
-  Output includes the content defined in the ancestor template.
+Output includes the content defined in the ancestor template.
 
 * ''Defined as empty in ancestor template, omitted in descendant template:''
 
-  No output.
+No output.
 
 * ''Defined with content in ancestor template, defined as empty in descendant:''
 
-  No output
+No output
 
 * ''Defined with content in ancestor template, and with different content in
   descendant:''
 
-  Content defined in the descendant template replaces that defined in the
-  ancestor template.
+Content defined in the descendant template replaces that defined in the
+ancestor template.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{name}} [required] An arbitrary identifier that must be unique at document
   level.
@@ -487,14 +487,14 @@ A placeholder for inserting dynamic content. Variables are generally passed
 by the processor, but may also be defined within the template (see
 {{cvt:defvar}}). Assignment is not supported.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{name}} [required] The identifier for the variable; in order to insert
   content, this value must be matched in the {{vars}} alist defined in the
   processing application, or by a variable defined within the template. If
   the name is a '''qualified name''', indicated with dotted notation, the
   processor will retrieve the named field from the named object (i.e.:
-  &lt;object&gt;.&lt;field&gt;)
+  <object>.<field>)
 
 * {{required}} [optional, default: true] Whether the variable is required to
   be defined. Any required variable that is undefined is an error.
@@ -502,23 +502,23 @@ by the processor, but may also be defined within the template (see
 * {{type}} [optional, default: string] A builtin or user-defined datatype.
   The builtin types are:
 
-    + string
+** {{string}}
 
-    + boolean
+** {{boolean}}
 
-    + char
+** {{char}}
 
-    + number
+** {{number}}
 
-    + integer
+** {{integer}}
 
-    + float
+** {{float}}
 
-    + list:&lt;type&gt;
+** {{list:<type>}}
 
-    + object
+** {{object}}
 
-    + node-list
+** {{node-list}}
 
 * {{format}} [optional] The name of a formatting function defined in the
   civet library or in your application. This function is usually
@@ -536,15 +536,15 @@ otherwise it is ommitted. May contain an optional {{cvt:else}} element.
 
 NOTE: The effects of nested {{cvt:if}} elements have not been tested.
 
-===== Context:
+'''Context:'''
 
 May be contained within any element, but see above note on nesting.
 
-===== Contents:
+'''Contents:'''
 
 Any element except {{cvt:template}} and {{cvt:block}}.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{test}} [required] A boolean expression. See {{Expression Language}} below.
 
@@ -553,17 +553,17 @@ Any element except {{cvt:template}} and {{cvt:block}}.
 The {{test}} attribute uses a simple expression language, including the
 following expressions:
 
-&lt;var-name&gt;   Returns #t if the variable is defined in the current
+<var-name>   Returns #t if the variable is defined in the current
 context, false otherwise.
 
-&lt;var-name&gt; = &lt;expr&gt;   Returns #t if the variable value is equal
+<var-name> = <expr>   Returns #t if the variable value is equal
 (using equal?) to the right-side expression. The right-side expression may
 be a (quoted) string or numeric literal, or another variable name.
 
-&lt;var-name&gt; != &lt;expr&gt;   Returns #t if the variable value is
+<var-name> != <expr>   Returns #t if the variable value is
 unequal to the right-side expression.
 
-&lt;function&gt;(&lt;var-name&gt;, &lt;expr&gt;)   Performs a numeric
+<function>(<var-name>, <expr>)   Performs a numeric
 comparison between the named variable and the right-side expression. Four
 functions are supported:
 
@@ -588,7 +588,7 @@ The content of this element is output if the {{cvt:if}} test fails.
 
 Iterate over a list variable.
 
-===== Attributes:
+'''Attributes:'''
 
 * {{each}} [required] Defines the local variable name for each iteration.
 
@@ -611,18 +611,18 @@ Iterate over a list variable.
 
 A container for variable definitions.
 
-===== Context:
+'''Context:'''
 
 Anywhere in a base template, or anywhere within a block in an extension
 template.
 
-===== Content:
+'''Content:'''
 
-Should contain one or more &lt;defvar&gt; elements [otherwise the {{cvt:with}}
+Should contain one or more <defvar> elements [otherwise the {{cvt:with}}
 element serves no purpose], followed by any other elements (except {{cvt:block}}
 and {{cvt:template}}).
 
-===== Attributes:
+'''Attributes:'''
 
 None.
 
@@ -635,16 +635,16 @@ Sets an attribute on its parent element. If the literal attribute is already
 defined on the parent, the value specified by this element overrides it.
 Otherwise, it adds a new attribute to the parent.
 
-===== Context:
+'''Context:'''
 
 Any element from the target vocabulary.
 
-===== Content:
+'''Content:'''
 
 A string, or an expression that evaluates to a string (such as a {{cvt:var}}
 element with a string value).
 
-===== Attributes:
+'''Attributes:'''
 
 * {{name}} [required]
 
@@ -654,18 +654,28 @@ element with a string value).
   present.
 
 
-==== ATTRIBUTES
+==== Variable substitution in attributes
 
 In addition to the attributes defined above for template vocabulary
-elements, any uprefixed attribute from the target vocabulary may have the
-{{civet}} namespace prefix applied to it. This indicates to the processor that
-the attribute's value is a variable reference; when encountering such an
-attribute, the processor will substitute the variable's value for the
-reference and remove the prefix. Note that this method permits only the
-substitution of a primitive data type with an obvious string representation.
-If you require any more complex manipulations, such as converting lists or
-objects to strings, or conditional processing, you must use the {{attr}}
-element.
+elements, any unprefixed attribute from the target vocabulary may have the
+{{civet}} namespace prefix applied to it.  This indicates to the processor
+that the attribute's value is a variable reference; when encountering such
+an attribute, the processor will substitute the variable's value for the
+reference and remove the prefix.
+
+For example, if your application defines a variable {{page-classes}} with
+the value "single-article blog-post", the following code in a template:
+
+    <body cvt:class="page-classes">
+
+will produce the output:
+
+    <body class="single-article blog-post">
+
+Note that this method permits only the substitution of a primitive data type
+with an obvious string representation.  If you require any more complex
+manipulations, such as converting lists or objects to strings, or
+conditional processing, you must use the {{attr}} element.
 
 If an element has an attribute prefixed in this manner, and a {{cvt:attr}}
 element child, the {{cvt:attr}} element overrides the prefixed attribute.
@@ -743,7 +753,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 === Version History
 
-'''0.2.1'''     Edited docs & converted to svnwiki format.
-'''0.2'''       Fixed inconsistent nesting bug. 
-'''0.1.1'''     Improved documentation.
-'''0.1'''       Initial release.
+;0.2.1:     Edited docs & converted to svnwiki format.
+
+;0.2:       Fixed inconsistent nesting bug. 
+
+;0.1.1:     Improved documentation.
+
+;0.1:       Initial release.
