@@ -27,8 +27,7 @@
 (use ssax)
 (use sxpath)
 (use sxml-serializer)
-
-
+(use matchable)
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  GLOBAL DEFINITIONS  ----------------------------------------------
@@ -119,22 +118,16 @@
               (loop rest (cons elt out)))))))))
 
 (define (update-attrs attrs1 attrs2)
-  (cond
-    ((and (null? attrs1) (null? attrs2)) #f)
-    ((null? attrs1) attrs2)
-    ((null? attrs2) attrs1)
-    (else
-      (let ((delete-dups
-              (lambda (keys lst)
-                (filter
-                  (lambda (elt)
-                    (not (member (car elt) keys)))
-                  lst)))
-            (keys
-              (map
-                (lambda (elt) (car elt))
-                attrs2)))
-        (append (delete-dups keys attrs1) attrs2)))))
+  (let ((delete-dups
+          (lambda (keys lst)
+            (filter
+              (lambda (elt) (not (member (car elt) keys)))
+              lst)))
+        (keys
+          (map
+            (lambda (elt) (car elt))
+            attrs2)))
+    (append (delete-dups keys attrs1) attrs2)))
     
 ;; This is just for debugging purposes
 (define (describe-tree t)
@@ -160,31 +153,31 @@
                           ((list? tail) "<LIST>"))
                         ")"))))))
 
-(define (symbol-depth obj #!optional (depth 0))
-  (cond
-    ((or (not obj) (null? obj) (string? obj)) #f)
-    ((symbol? obj) depth)
-    (else (symbol-depth (car obj) (+ depth 1)))))
-
-(define (nest-depth obj #!optional (depth 0))
-  (if (and (list? obj) (not (null? obj)))
-    (nest-depth (car obj) (+ depth 1))
-    depth))
-
-(define (normalize-subtree st)
-  (if (list? st)
-    (filter
-      (lambda (elt)
-        (and elt (not (null? elt))))
-      (let ((nd (nest-depth st)))
-        (cond
-          ((and (> nd 3) (= (length st) 1)) (normalize-subtree (car st)))
-          ((and (= nd 3) (= (length st) 1)) (car st))
-          ((= nd 3) (map join st))
-          ((and (= nd 2) (string? (caar st))) (car st))
-          ((<= nd 2) st)
-          (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd)))))
-    st))
+; (define (symbol-depth obj #!optional (depth 0))
+;   (cond
+;     ((or (not obj) (null? obj) (string? obj)) #f)
+;     ((symbol? obj) depth)
+;     (else (symbol-depth (car obj) (+ depth 1)))))
+; 
+; (define (nest-depth obj #!optional (depth 0))
+;   (if (and (list? obj) (not (null? obj)))
+;     (nest-depth (car obj) (+ depth 1))
+;     depth))
+; 
+; (define (normalize-subtree st)
+;   (if (list? st)
+;     (filter
+;       (lambda (elt)
+;         (and elt (not (null? elt))))
+;       (let ((nd (nest-depth st)))
+;         (cond
+;           ((and (> nd 3) (= (length st) 1)) (normalize-subtree (car st)))
+;           ((and (= nd 3) (= (length st) 1)) (car st))
+;           ((= nd 3) (map join st))
+;           ((and (= nd 2) (string? (caar st))) (car st))
+;           ((<= nd 2) st)
+;           (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd)))))
+;     st))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -605,8 +598,8 @@
     (cond
       ((and required (not value))
        (eprintf "No value provided for required variable '~A'\n." var-name))
-      (value value)
-      (else #f))))
+      (value (list value))
+      (else '()))))
 
 
 (define (%cvt:if node ctx)
@@ -619,13 +612,11 @@
              (se node))))
     (cond
       (test-result
-        (normalize-subtree
-        (process-tree content (context->context ctx test: #t)))
-        )
+        (process-tree content ctx))
       ((and (not test-result) else-node)
        (%cvt:else (car else-node) ctx))
       (else
-        #f))))
+        '()))))
 
 (define (%cvt:else node ctx)
   (process-tree (cdr node) ctx))
@@ -695,9 +686,9 @@
             (cdr nodes)
             (cons (cons (string->symbol var-name) value) local-vars)))))))
 
-(define (%cvt:defvar node ctx) #f)
+(define (%cvt:defvar node ctx) '())
 
-(define (%cvt:locale node ctx) #f)
+(define (%cvt:locale node ctx) '())
 
 ;; FIXME: seems like there should be a more efficient way to
 ;;   get the value of a child element
@@ -716,8 +707,8 @@
          (child-value
            (cond
              ;; I believe (pair? x) is equivalent to (not (null? x)) for this purpose
-             ((pair? if-child) (%cvt:if if-child ctx))
-             ((pair? var-child) (%cvt:var var-child ctx)) 
+             ((pair? if-child) (car (%cvt:if if-child ctx)))
+             ((pair? var-child) (car (%cvt:var var-child ctx)))
              ((pair? txt-child) txt-child)
              (else #f)))
          (value (or child-value (car (val-exp elt)))))
@@ -748,11 +739,13 @@
            (map (lambda (att-elt) (%cvt:attr att-elt ctx)) template-attrs))
          (final-attvals
            (update-attrs att-list template-attvals))
+         (final-atts
+           (if (null? final-attvals)
+             final-attvals
+             (list (cons '@ final-attvals))))
          (final-kids
-           (normalize-subtree (process-tree kids ctx))))
-    (if final-attvals
-      (cons tag (cons (cons '@ final-attvals) final-kids))
-      (cons tag final-kids))))
+           (process-tree kids ctx)))
+    (list `(,tag ,@final-atts ,@final-kids))))
 
 (define (%attribute attr ctx)
   (let* ((name* (car attr))
@@ -777,22 +770,17 @@
 ;; This is the generic dispatch function
 (define (process-tree tree ctx)
   (let ((state (ctx 'get-state)))
-    (if (or (string? tree) (symbol? tree) (null? tree))
-      tree
-      (let* ((head (car tree))
-             (tail (cdr tree)))
-        (cond
-          ((null? head)
-           (process-tree tail ctx))
-          ((string? head)
-           (cons head (process-tree tail ctx)))
-          ((list? head)
-           (filter
-             identity
-             (map
-               (lambda (node) (process-tree node ctx))
-               tree)))
-          (else
+    (cond
+      ((null? tree) tree)
+      ((string? tree) (list tree))
+      (else
+        (let* ((head (car tree))
+               (tail (cdr tree)))
+          (if (or (string? head) (list? head))
+            (join
+              (map
+                (lambda (node) (process-tree node ctx))
+                tree))
             (let ((cvt-localname (cvt-name? head ctx)))
               (if cvt-localname
                 ;; cvt:template should have been handled already by build-template-set
@@ -803,30 +791,30 @@
                   ;; cvt:head should already have been handled in build-template-set or
                   ;;   by the handler for the document element
                   ; ((head) '())
-                  ((head) #f)
+                  ((head) '())
                   ((locale) (%cvt:locale tree ctx))
                   ((defvar) (%cvt:defvar tree ctx))
                   ((var) (%cvt:var tree ctx))
                   ;; cvt:attr should be handled in the handler for its parent element
                   ; ((attr) '())
-                  ((attr) #f)
+                  ((attr) '())
                   ((with) (%cvt:with tree ctx))
                   ((if) (%cvt:if tree ctx))
                   ;; cvt:else should already be handled by the %cvt:if handler
                   ; ((else) '())
-                  ((else) #f)
+                  ((else) '())
                   ((for) (%cvt:for tree ctx)))
                 ;; attributes are handled by the handler for their element
                 (cond
-                  ((eqv? head '@) #f)
+                  ((eqv? head '@) '())
                   ; ((eqv? head '*PI*) tree)
                   ((or (eqv? head '*TOP*)
                        (eqv? head '*PI*)
                        (eqv? head '*NAMESPACES*))
-                   (cons head (process-tree tail ctx)))
+                   tree)
                   ((symbol? head) (%element tree ctx))
                   ((and (not head) (eqv? state 'top))   ; This is probably a default NS annotation
-                   (cons head (process-tree tail ctx)))
+                   tree)
                   (else
                     (eprintf "Node not handled: ~A\n" head)))))))))))
 
@@ -865,7 +853,7 @@
       (else
         (assert (eqv? (context 'get-state) 'top))
         (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
-          (%element template child-ctx))))))
+          (car (%element template child-ctx)))))))
 
 (define (process-template-set name context)
   (let-values (((template block-data) (build-template-set name context)))

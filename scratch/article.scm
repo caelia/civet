@@ -15,5 +15,5 @@
 
 (define my-context (make-context vars: my-vars))
 
-; (render "article.html" my-context file: "article1.html")
-(process-template-set "article.html" my-context)
+(render "article.html" my-context file: "article1.html")
+; (process-template-set "article.html" my-context)
