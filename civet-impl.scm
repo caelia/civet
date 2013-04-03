@@ -153,32 +153,6 @@
                           ((list? tail) "<LIST>"))
                         ")"))))))
 
-; (define (symbol-depth obj #!optional (depth 0))
-;   (cond
-;     ((or (not obj) (null? obj) (string? obj)) #f)
-;     ((symbol? obj) depth)
-;     (else (symbol-depth (car obj) (+ depth 1)))))
-; 
-; (define (nest-depth obj #!optional (depth 0))
-;   (if (and (list? obj) (not (null? obj)))
-;     (nest-depth (car obj) (+ depth 1))
-;     depth))
-; 
-; (define (normalize-subtree st)
-;   (if (list? st)
-;     (filter
-;       (lambda (elt)
-;         (and elt (not (null? elt))))
-;       (let ((nd (nest-depth st)))
-;         (cond
-;           ((and (> nd 3) (= (length st) 1)) (normalize-subtree (car st)))
-;           ((and (= nd 3) (= (length st) 1)) (car st))
-;           ((= nd 3) (map join st))
-;           ((and (= nd 2) (string? (caar st))) (car st))
-;           ((<= nd 2) st)
-;           (else (eprintf "Failed to normalize subtree: ~A [nd=~A]" st nd)))))
-;     st))
-
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
 
