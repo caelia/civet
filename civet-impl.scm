@@ -307,7 +307,11 @@
       ((set-vars!)
        (set! vars args))
       ((get-var)
-       (alist-ref (car args) vars))
+       (let ((segments (string-split (car args) ".")))
+         (foldl
+           (lambda (obj name) (alist-ref name obj))
+           vars
+           segments)))
       ((get-vars)
        vars)
       ((get-field)
