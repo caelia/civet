@@ -586,7 +586,7 @@
     (cond
       (test-result
         (process-tree content ctx))
-      ((and (not test-result) else-node)
+      ((not (or test-result (null? else-node)))
        (%cvt:else (car else-node) ctx))
       (else
         '()))))
