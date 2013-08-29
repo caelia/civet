@@ -88,7 +88,7 @@ XML
 ;;; ------  Run tests  -----------------------------------------------------
 
 (test-group "Context Objects"
-  (test "Retrieve a variable" #\L (ctx01 'get-var 'louise))
+  (test "Retrieve a variable" #\L (ctx01 'get-var "louise"))
   (test "Check the current state" 'init (ctx01 'get-state)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
