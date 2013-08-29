@@ -24,6 +24,7 @@
 
 (use utf8)
 (use utf8-srfi-13)
+(use uri-common)
 (use ssax)
 (use sxpath)
 (use sxml-serializer)
@@ -151,6 +152,16 @@
                           ((symbol? tail) "<SYMBOL>")
                           ((list? tail) "<LIST>"))
                         ")"))))))
+
+(define (apply-formatting str formats)
+  (let ((fmts (map string->symbol (string-split formats))))
+    (foldl
+      (lambda (str* fmt)
+        (case fmt
+          ((uri) (uri-encode-string str*))
+          (else str*)))
+      str
+      fmts)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -547,13 +558,17 @@
          (obj+field (string-split var-name "."))
          (value (ctx 'get-var var-name))
          (var-type (get-attval attrs 'type "string"))
+         (formats (get-attval attrs 'format))
          (req-str (get-attval attrs 'required))
          (required (or (not req-str)
                        (string->bool req-str))))
     (cond
       ((and required (not value))
        (eprintf "No value provided for required variable '~A'\n." var-name))
-      (value (list value))
+      ((and value formats)
+       (list (apply-formatting value formats)))
+      (value
+        (list value))
       (else '()))))
 
 
