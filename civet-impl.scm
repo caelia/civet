@@ -232,7 +232,7 @@
 (define (eval-test test-expr ctx)
   (let ((m (irregex-match testexp-re test-expr))
         (ims irregex-match-substring)
-        (get-var (lambda (var-name) (ctx 'get-var (string->symbol var-name)))))
+        (get-var (lambda (var-name) (ctx 'get-var var-name))))
     (if m
       (let ((bare-var (ims m 'bare-var))
             (lhs-var (ims m 'lhs-var))
@@ -309,7 +309,7 @@
       ((get-var)
        (let ((segments (string-split (car args) ".")))
          (foldl
-           (lambda (obj name) (alist-ref name obj))
+           (lambda (obj name) (alist-ref (string->symbol name) obj))
            vars
            segments)))
       ((get-vars)
@@ -564,10 +564,10 @@
   (let* ((attrs (get-attrs elt))
          (var-name (get-attval attrs 'name))
          (obj+field (string-split var-name "."))
-         (value
-           (if (= (length obj+field) 2)
-             (ctx 'get-field (string->symbol (car obj+field)) (string->symbol (cadr obj+field)))
-             (ctx 'get-var (string->symbol var-name))))
+         (value (ctx 'get-var var-name))
+           ; (if (= (length obj+field) 2)
+             ; (ctx 'get-field (string->symbol (car obj+field)) (string->symbol (cadr obj+field)))
+             ; (ctx 'get-var (string->symbol var-name))))
          (var-type (get-attval attrs 'type "string"))
          (req-str (get-attval attrs 'required))
          (required (or (not req-str)
@@ -614,7 +614,7 @@
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
          (var-name (get-attval attrs "in"))
-         (value (ctx 'get-var (string->symbol var-name))))
+         (value (ctx 'get-var var-name)))
     (if value
       (let* ((local-key (string->symbol (get-attval attrs "each")))
              (type (string->symbol (get-attval attrs "type" "string")))
@@ -730,7 +730,7 @@
          (localname (cvt-name? name* ctx))
          (value
            (if localname
-             (ctx 'get-var (string->symbol value*))
+             (ctx 'get-var value*)
              value*))
          (name (or (and localname (string->symbol localname)) name*)))
     (list name value)))
