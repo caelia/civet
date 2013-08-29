@@ -440,30 +440,11 @@
       locale-data)))
 
 (define (get-template-vars template ctx)
-  (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*)))
-        (name-exp (sxpath '(@ name *text*)))
-        (val-exp (sxpath '(@ value *text*)))
-        (kids-exp (sxpath '(*any*))))
+  (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*))))
     (filter
       identity
       (map
-        (lambda (def)
-          (let* ((name* (name-exp def))
-                 (name (string->symbol (car name*)))
-                 (value* (val-exp def))
-                 (kids (kids-exp def))
-                 (value
-                   (cond
-                     ((not (null? value*)) (car value*))
-                     ((not (null? kids))
-                      (let ((kids-result (process-tree kids ctx)))
-                        (if (every string? kids-result)
-                          (apply string-append kids-result)
-                          kids-result)))
-                     (else #f))))
-            (if value 
-              (cons name value)
-              #f)))
+        (lambda (def) (%cvt:defvar def ctx))
         (sp1 template)))))
 
 (define (build-template-set name ctx)
@@ -565,9 +546,6 @@
          (var-name (get-attval attrs 'name))
          (obj+field (string-split var-name "."))
          (value (ctx 'get-var var-name))
-           ; (if (= (length obj+field) 2)
-             ; (ctx 'get-field (string->symbol (car obj+field)) (string->symbol (cadr obj+field)))
-             ; (ctx 'get-var (string->symbol var-name))))
          (var-type (get-attval attrs 'type "string"))
          (req-str (get-attval attrs 'required))
          (required (or (not req-str)
@@ -647,23 +625,34 @@
             sorted))))))
 
 (define (%cvt:with node ctx)
-  (let* ((attrs (get-attrs node))
-         (content (get-kids node))
-         (se (sxpath '(defvar) (*sxpath-nsmap*)))
-         (nodes* (se content)))
-    (let loop ((nodes nodes*)
-               (local-vars '()))
-      (if (null? nodes)
-        (process-tree content (context->context ctx +vars: local-vars))
-        (let* ((defnode (car nodes))
-               (var-name (get-attval defnode "name"))
-               (value (or (get-attval defnode "value")
-                          (get-kids defnode))))
-          (loop
-            (cdr nodes)
-            (cons (cons (string->symbol var-name) value) local-vars)))))))
+  (let* ((content (get-kids node))
+         (se (sxpath '(cvt:defvar) (*sxpath-nsmap*)))
+         (defnodes (se node))
+         (local-vars
+           (map
+             (lambda (def) (%cvt:defvar def ctx))
+             defnodes)))
+    (process-tree content (context->context ctx +vars: local-vars))))
 
-(define (%cvt:defvar node ctx) '())
+(define (%cvt:defvar node ctx)
+  (let* ((name-exp (sxpath '(@ name *text*)))
+         (val-exp (sxpath '(@ value *text*)))
+         (kids-exp (sxpath '(*any*)))
+         (name* (name-exp node))
+         (name (string->symbol (car name*)))
+         (value* (val-exp node))
+         (kids (kids-exp node))
+         (value
+           (cond
+             ((not (null? value*)) (car value*))
+             ((not (null? kids))
+              (let ((kids-result (process-tree kids ctx)))
+                (if (every string? kids-result)
+                  (apply string-append kids-result)
+                  kids-result)))
+             (else #f))))
+    (and value
+         (cons name value))))
 
 (define (%cvt:locale node ctx) '())
 
@@ -767,18 +756,16 @@
                   ((block) (%cvt:block tree ctx)) 
                   ;; cvt:head should already have been handled in build-template-set or
                   ;;   by the handler for the document element
-                  ; ((head) '())
                   ((head) '())
                   ((locale) (%cvt:locale tree ctx))
-                  ((defvar) (%cvt:defvar tree ctx))
+                  ; ((defvar) (%cvt:defvar tree ctx))
+                  ((defvar) '())
                   ((var) (%cvt:var tree ctx))
                   ;; cvt:attr should be handled in the handler for its parent element
-                  ; ((attr) '())
                   ((attr) '())
                   ((with) (%cvt:with tree ctx))
                   ((if) (%cvt:if tree ctx))
                   ;; cvt:else should already be handled by the %cvt:if handler
-                  ; ((else) '())
                   ((else) '())
                   ((for) (%cvt:for tree ctx)))
                 ;; attributes are handled by the handler for their element
