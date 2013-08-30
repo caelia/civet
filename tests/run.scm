@@ -703,7 +703,31 @@ XML
   (test
     "TR1.17: cvt:for over a one-item list, inserting object fields"
     doc-tr1-17-out
-    (process-base-template doc-tr1-17-in '() ctx-tr1-13)))
+    (process-base-template doc-tr1-17-in '() ctx-tr1-13))
+  (test
+    "TR1.18: insert variables defined in cvt:with"
+    doc-tr1-18-out
+    (process-base-template doc-tr1-18-in '() ctx-tr1-18))
+  (test-error
+    "TR1.19: referencing variables out of cvt:with scope [ERROR]"
+    (process-base-template doc-tr1-19-in '() ctx-tr1-18))
+  (test
+    "TR1.20: cvt:interpolate with a loop variable of length 1."
+    doc-tr1-20-out
+    (process-base-template doc-tr1-20-in '() ctx-tr1-20))
+  (test
+    "TR1.21: cvt:interpolate with a loop variable of length 2."
+    doc-tr1-21-out
+    (process-base-template doc-tr1-20-in '() ctx-tr1-21))
+  (test
+    "TR1.22: cvt:interpolate with a loop variable of length > 2."
+    doc-tr1-22-out
+    (process-base-template doc-tr1-20-in '() ctx-tr1-22))
+  (test
+    "TR1.23: use cvt:macro to insert a local variable"
+    doc-tr1-23-out
+    (process-base-template doc-tr1-23-in '() ctx-tr1-23)))
+
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
