@@ -454,7 +454,9 @@
     (sp template)))
 
 (define (get-template-locale template)
-  (let* ((sp (sxpath '(cvt:template cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
+  ; (let* ((sp (sxpath '(cvt:template cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
+  ; We want this to work in a base template
+  (let* ((sp (sxpath '(* cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
          (locale-data (sp template)))
     (map
       (lambda (elt) (cons (car elt) (cadr elt)))
