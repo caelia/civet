@@ -472,6 +472,14 @@
         (lambda (def) (%cvt:defvar def ctx))
         (sp1 template)))))
 
+(define (get-template-macros template ctx)
+  (let ((sp1 (sxpath '(* cvt:head cvt:defmacro) (*sxpath-nsmap*))))
+    (filter
+      pair?
+      (map
+        (lambda (def) (%cvt:defmacro def ctx))
+        (sp1 template)))))
+
 (define (build-template-set name ctx)
   ;;; ??? FIXME ??? -- do these sxpath exprs work without namespace mappings?
   (let ((sp1 (sxpath '(cvt:template *)))
@@ -729,7 +737,7 @@
          (cons name value))))
 
 (define (%cvt:defmacro node ctx)
-  #f)
+  (get-kids node))
 
 (define (%cvt:locale node ctx) '())
 
