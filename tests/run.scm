@@ -5,6 +5,12 @@
 
 (create-directory (make-pathname "templates" ".cache") #t)
 
+(define (standard-test-context vars)
+  (make-context state: 'init
+                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
+                         (cvt . "http://xmlns.therebetygers.net/civet/0.2"))
+                vars:  vars))
+
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE FILE HANDLING  ------------------------------------------
 
@@ -120,30 +126,27 @@ XML
      (a
        (b "Some text."))))
 
-(define ctx-tr1-1
-  (make-context state: 'init
-                vars: '((color . "green"))
-                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
-                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))))
+(define ctx-tr10-1
+  (standard-test-context '((color . "green"))))
 
-(define doc-tr1-1
+(define doc-tr10-1
   '(*TOP*
      (@
        (*NAMESPACES* 
          (#f "http://www.w3.org/1999/xhtml")
-         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt "http://xmlns.therebetygers.net/civet/0.2")))
      (html
        (head
          (title "test doc"))
        (body
          (p "Pointless text")))))
 
-(define doc-tr1-2-in
+(define doc-tr10-2-in
   '(*TOP*
      (@
        (*NAMESPACES* 
          (#f "http://www.w3.org/1999/xhtml")
-         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt "http://xmlns.therebetygers.net/civet/0.2")))
      (html
        (head
          (title "test doc"))
@@ -151,30 +154,27 @@ XML
          (p
            (cvt:var (@ (name "color"))))))))
 
-(define doc-tr1-2-out
+(define doc-tr10-2-out
   '(*TOP*
      (@
        (*NAMESPACES* 
          (#f "http://www.w3.org/1999/xhtml")
-         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt "http://xmlns.therebetygers.net/civet/0.2")))
      (html
        (head
          (title "test doc"))
        (body
          (p "green")))))
 
-(define ctx-tr1-4
-  (make-context state: 'init
-                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
-                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))
-                vars:  '((color . "lime") (size . "12") (age . "27")
-                         (divclass . "Poinsettia") (divid . "baz451") (chapeau . "porkpie"))))
+(define ctx-tr10-4
+  (standard-test-context '((color . "lime") (size . "12") (age . "27") (divclass . "Poinsettia")
+                           (divid . "baz451") (chapeau . "porkpie"))))
 
-(define doc-tr1-4-in
+(define doc-tr10-4-in
 '(*TOP*
    (@ (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -182,16 +182,16 @@ XML
              (@ (test "color"))
              "12")))))
 
-(define doc-tr1-4-out
+(define doc-tr10-4-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body "12"))))
 
-(define doc-tr1-5-in
+(define doc-tr10-5-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -200,18 +200,18 @@ XML
              "12"
              (cvt:else "27"))))))
 
-(define doc-tr1-5-out
+(define doc-tr10-5-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body "27"))))
 
-(define doc-tr1-6-in
+(define doc-tr10-6-in
 '(*TOP*
    (@ (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -219,16 +219,16 @@ XML
              (@ (test "color"))
              (cvt:var (@ (name "size"))))))))
 
-(define doc-tr1-6-out
+(define doc-tr10-6-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body "12"))))
 
-(define doc-tr1-7-in
+(define doc-tr10-7-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -238,16 +238,16 @@ XML
              (cvt:else
                (cvt:var (@ (name "age")))))))))
 
-(define doc-tr1-7-out
+(define doc-tr10-7-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body "27"))))
 
-(define doc-tr1-8-in
+(define doc-tr10-8-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -255,17 +255,17 @@ XML
              (@ (test "color"))
              (p (cvt:var (@ (name "size")))))))))
 
-(define doc-tr1-8-out
+(define doc-tr10-8-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
            (p "12")))))
 
-(define doc-tr1-9-in
+(define doc-tr10-9-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -276,18 +276,18 @@ XML
                (div (@ (id "age-div") (class "info"))
                     (cvt:var (@ (name "age"))))))))))
 
-(define doc-tr1-9-out
+(define doc-tr10-9-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
            (div (@ (id "age-div") (class "info"))
                 "27")))))
 
-(define doc-tr1-10-in
+(define doc-tr10-10-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -296,32 +296,32 @@ XML
              (p (cvt:var (@ (name "size"))))
              (p (cvt:var (@ (name "age")))))))))
 
-(define doc-tr1-10-out
+(define doc-tr10-10-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
            (p "12")
            (p "27")))))
 
-(define doc-tr1-11-in
+(define doc-tr10-11-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body (div (@ (cvt:class "divclass")) "Div Contents")))))
 
-(define doc-tr1-11-out
+(define doc-tr10-11-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body (div (@ (class "Poinsettia")) "Div Contents")))))
 
-(define doc-tr1-12-in
+(define doc-tr10-12-in
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -332,9 +332,9 @@ XML
              (cvt:attr (@ (value "fedora") (name "chapeau")))
              "Div Contents")))))
 
-(define doc-tr1-12-out
+(define doc-tr10-12-out
 '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
    (html (@ (xml:lang "en") (lang "en"))
          (head (title))
          (body
@@ -342,42 +342,40 @@ XML
              (@ (class "Poinsettia") (id "baz451") (chapeau "fedora"))
              "Div Contents")))))
 
-(define ctx-tr1-13
-  (make-context state: 'init
-                nsmap: '((#f . "http://www.w3.org/1999/xhtml")
-                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))
-                vars:  '((lizards . ("gecko" "komodo dragon" "gila monster" "chameleon"))
-                         (books . ("Frankenstein" "The Wise Man's Fear" "The Left Hand of Darkness"
-                                   "One Hundred Years of Solitude" "Disaster Capitalism"))
-                         (libro . ((title . "A Study in Scarlet")
-                                   (author . "Sir Arthur Conan Doyle")
-                                   (desc . "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time.")))
-                         (livres . (((title . "Frankenstein")
-                                     (author . "Mary Shelley")
-                                     (desc . "The seminal tale of technological hubris."))
-                                    ((title . "The Wise Man's Fear")
-                                     (author . "Patrick Rothfuss")
-                                     (desc . "The second volume in the story of Kvothe, a world-destroying wizard."))
-                                    ((title . "The Left Hand of Darkness")
-                                     (author . "Ursula K. LeGuin")
-                                     (desc . "An interplanetary diplomat has an eye-opening encounter with a humanoid race whose people switch gender according to the situation."))
-                                    ((title . "The War of the End of the World")
-                                     (author . "Mario Vargas Llosa")
-                                     (desc . "A band of outcasts try to build a utopian community deep in the Amazon jungle, only to be slaughtered by the Brazilian army."))
-                                    ((title .  "Disaster Capitalism")
-                                     (author . "Naomi Klein")
-                                     (desc . "The author explains how the global elite take advantage of natural and political crises to advance the neoliberal economic agenda."))))
-                         (ein-buch . (((title . "A Study in Scarlet")
-                                       (author . "Sir Arthur Conan Doyle")
-                                       (desc . "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time.")))))))
+(define ctx-tr10-13
+  (standard-test-context
+    '((lizards . ("gecko" "komodo dragon" "gila monster" "chameleon"))
+      (books . ("Frankenstein" "The Wise Man's Fear" "The Left Hand of Darkness"
+                "One Hundred Years of Solitude" "Disaster Capitalism"))
+      (libro . ((title . "A Study in Scarlet")
+                (author . "Sir Arthur Conan Doyle")
+                (desc . "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time.")))
+      (livres . (((title . "Frankenstein")
+                  (author . "Mary Shelley")
+                  (desc . "The seminal tale of technological hubris."))
+                 ((title . "The Wise Man's Fear")
+                  (author . "Patrick Rothfuss")
+                  (desc . "The second volume in the story of Kvothe, a world-destroying wizard."))
+                 ((title . "The Left Hand of Darkness")
+                  (author . "Ursula K. LeGuin")
+                  (desc . "An interplanetary diplomat has an eye-opening encounter with a humanoid race whose people switch gender according to the situation."))
+                 ((title . "The War of the End of the World")
+                  (author . "Mario Vargas Llosa")
+                  (desc . "A band of outcasts try to build a utopian community deep in the Amazon jungle, only to be slaughtered by the Brazilian army."))
+                 ((title .  "Disaster Capitalism")
+                  (author . "Naomi Klein")
+                  (desc . "The author explains how the global elite take advantage of natural and political crises to advance the neoliberal economic agenda."))))
+      (ein-buch . (((title . "A Study in Scarlet")
+                    (author . "Sir Arthur Conan Doyle")
+                    (desc . "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time.")))))))
 
 
-(define doc-tr1-13-in
+(define doc-tr10-13-in
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
    
@@ -389,12 +387,12 @@ XML
             (@ (name "x")))
           (br))))))
 
-(define doc-tr1-13-out
+(define doc-tr10-13-out
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -408,12 +406,12 @@ XML
         "komodo dragon"
         (br)))))
 
-(define doc-tr1-14-in
+(define doc-tr10-14-in
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -424,12 +422,12 @@ XML
             (cvt:var
               (@ (name "book")))))))))
 
-(define doc-tr1-14-out
+(define doc-tr10-14-out
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -440,12 +438,12 @@ XML
         (p "One Hundred Years of Solitude")
         (p "Disaster Capitalism")))))
 
-(define doc-tr1-15-in
+(define doc-tr10-15-in
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -469,12 +467,12 @@ XML
                 (cvt:var
                   (@ (name "libro.desc")))))))))))
 
-(define doc-tr1-15-out
+(define doc-tr10-15-out
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -492,12 +490,12 @@ XML
               (th "Description")
               (td "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time."))))))))
 
-(define doc-tr1-16-in
+(define doc-tr10-16-in
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -517,12 +515,12 @@ XML
                 (th "Description")
                 (td (cvt:var (@ (name "livre.desc"))))))))))))
 
-(define doc-tr1-16-out
+(define doc-tr10-16-out
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -584,12 +582,12 @@ XML
               (th "Description")
               (td "The second volume in the story of Kvothe, a world-destroying wizard."))))))))
 
-(define doc-tr1-17-in
+(define doc-tr10-17-in
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -609,12 +607,12 @@ XML
                 (th "Description")
                 (td (cvt:var (@ (name "buch.desc"))))))))))))
 
-(define doc-tr1-17-out
+(define doc-tr10-17-out
 '(*TOP*
   (@
     (*NAMESPACES*
       (#f "http://www.w3.org/1999/xhtml")
-      (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+      (cvt "http://xmlns.therebetygers.net/civet/0.2")))
   (html
     (@ (xml:lang "en") (lang "en"))
     (head (title))
@@ -632,121 +630,363 @@ XML
               (th "Description")
               (td "In which we encounter the extraordinary &amp; eccentric Sherlock Holmes for the first time."))))))))
 
+(define ctx-tr10-18
+  (standard-test-context '((base_url . "http://some.cool.com/pages"))))
+
+(define doc-tr10-18-in
+'(*TOP*
+   (@
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body
+       (cvt:with
+         (cvt:defvar
+           (@ (value "articles") (name "local_part")))
+         (p
+           (cvt:var
+             (@ (name "base_url")))
+           "/"
+           (cvt:var
+             (@ (name "local_part")))))
+       (cvt:with
+         (cvt:defvar
+           (@ (value "people") (name "local_part")))
+         (p
+           (cvt:var
+             (@ (name "base_url")))
+           "/"
+           (cvt:var
+             (@ (name "local_part")))))
+       (cvt:with
+         (cvt:defvar
+           (@ (value "admin") (name "local_part")))
+         (p
+           (cvt:var
+             (@ (name "base_url")))
+           "/"
+           (cvt:var
+             (@ (name "local_part")))))))))
+
+(define doc-tr10-18-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body 
+       (p "http://some.cool.com/pages" "/" "articles")
+       (p "http://some.cool.com/pages" "/" "people")
+       (p "http://some.cool.com/pages" "/" "admin")))))
+
+(define doc-tr10-19-in
+'(*TOP*
+   (@
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body
+       (cvt:with
+         (cvt:defvar
+           (@ (value "articles") (name "local_part")))
+         (p
+           (cvt:var
+             (@ (name "base_url")))
+           "/"
+           (cvt:var
+             (@ (name "local_part")))))
+       (p 
+         (cvt:var 
+           (@ (name "base_url")))
+         "/"
+         (cvt:var 
+           (@ (name "local_part"))))))))
+
+(define ctx-tr10-20
+  (standard-test-context '((names . ("Sally")))))
+
+(define doc-tr10-20-in
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body 
+       (cvt:for
+         (@ (in "names") (each "name"))
+         (cvt:interpolate ", ")
+         (cvt:interpolate (@ (mode "pair")) " &amp; ")
+         (cvt:interpolate (@ (mode "last")) ", &amp; ")
+         (cvt:var (@ (name "name"))))))))
+
+(define doc-tr10-20-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body "\n    Sally\n  "))))
+
+(define ctx-tr10-21
+  (standard-test-context '((names . ("Sally" "Dorian")))))
+
+(define doc-tr10-21-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body "\n    Sally & Dorian\n  "))))
+
+(define ctx-tr10-22
+  (standard-test-context '((names . ("Amanda" "Brendan" "Caroline" "Daniel")))))
+
+(define doc-tr10-22-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body "\n    Amanda, Brendan, Caroline, & Daniel\n  "))))
+
+(define doc-tr10-23-in
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (cvt:head
+       (cvt:defmacro
+         (@ (name "local_url"))
+         (p 
+           (cvt:var 
+             (@ (name "base_url")))
+           "/"
+           (cvt:var 
+             (@ (name "local_part"))))))
+     (head (title))
+     (body 
+       (cvt:with
+         (cvt:defvar 
+           (@ (value "articles") (name "local_part")))
+         (cvt:macro 
+           (@ (name "local_url"))))
+       (cvt:with
+         (cvt:defvar 
+           (@ (value "people") (name "local_part")))
+         (cvt:macro 
+           (@ (name "local_url"))))
+       (cvt:with
+         (cvt:defvar 
+           (@ (value "admin") (name "local_part")))
+         (cvt:macro 
+           (@ (name "local_url"))))))))
+
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
-(test-group "[TR1] Simple Transformations"
+(test-group "[TR10] Simple Transformations"
   (test
-    "TR1.01: Simple Template without CVT Markup (identity)"
+    "TR10.01: Simple Template without CVT Markup (identity)"
     min-doc
     (process-base-template min-doc '() min-ctx))
   (test
-    "TR1.02: XHTML Template without CVT Markup (identity)"
-    doc-tr1-1
-    (process-base-template doc-tr1-1 '() ctx-tr1-1))
+    "TR10.02: XHTML Template without CVT Markup (identity)"
+    doc-tr10-1
+    (process-base-template doc-tr10-1 '() ctx-tr10-1))
   (test
-    "TR1.03: Basic string variable substitution"
-    doc-tr1-2-out
-    (process-base-template doc-tr1-2-in '() ctx-tr1-1))
+    "TR10.03: Basic string variable substitution"
+    doc-tr10-2-out
+    (process-base-template doc-tr10-2-in '() ctx-tr10-1))
   (test
-    "TR1.04: cvt:if, no else clause, literal string"
-    doc-tr1-4-out
-    (process-base-template doc-tr1-4-in '() ctx-tr1-4))
+    "TR10.04: cvt:if, no else clause, literal string"
+    doc-tr10-4-out
+    (process-base-template doc-tr10-4-in '() ctx-tr10-4))
   (test
-    "TR1.05: cvt:if + else clause, literal string"
-    doc-tr1-5-out
-    (process-base-template doc-tr1-5-in '() ctx-tr1-4))
+    "TR10.05: cvt:if + else clause, literal string"
+    doc-tr10-5-out
+    (process-base-template doc-tr10-5-in '() ctx-tr10-4))
   (test
-    "TR1.06: cvt:if, no else clause, string variable only"
-    doc-tr1-6-out
-    (process-base-template doc-tr1-6-in '() ctx-tr1-4))
+    "TR10.06: cvt:if, no else clause, string variable only"
+    doc-tr10-6-out
+    (process-base-template doc-tr10-6-in '() ctx-tr10-4))
   (test
-    "TR1.07: cvt:if + else clause, string variable only"
-    doc-tr1-7-out
-    (process-base-template doc-tr1-7-in '() ctx-tr1-4))
+    "TR10.07: cvt:if + else clause, string variable only"
+    doc-tr10-7-out
+    (process-base-template doc-tr10-7-in '() ctx-tr10-4))
   (test
-    "TR1.08: cvt:if, no else clause, string var in literal element"
-    doc-tr1-8-out
-    (process-base-template doc-tr1-8-in '() ctx-tr1-4))
+    "TR10.08: cvt:if, no else clause, string var in literal element"
+    doc-tr10-8-out
+    (process-base-template doc-tr10-8-in '() ctx-tr10-4))
   (test
-    "TR1.09: cvt:if + else clause, string var in literal element"
-    doc-tr1-9-out
-    (process-base-template doc-tr1-9-in '() ctx-tr1-4))
+    "TR10.09: cvt:if + else clause, string var in literal element"
+    doc-tr10-9-out
+    (process-base-template doc-tr10-9-in '() ctx-tr10-4))
   (test
-    "TR1.10: cvt:if, insert two vars, each in its own paragraph"
-    doc-tr1-10-out
-    (process-base-template doc-tr1-10-in '() ctx-tr1-4))
+    "TR10.10: cvt:if, insert two vars, each in its own paragraph"
+    doc-tr10-10-out
+    (process-base-template doc-tr10-10-in '() ctx-tr10-4))
   (test
-    "TR1.11: direct attribute substitution"
-    doc-tr1-11-out
-    (process-base-template doc-tr1-11-in '() ctx-tr1-4))
+    "TR10.11: direct attribute substitution"
+    doc-tr10-11-out
+    (process-base-template doc-tr10-11-in '() ctx-tr10-4))
   (test
-    "TR1.12: attribute substitution using cvt:attr elements"
-    doc-tr1-12-out
-    (process-base-template doc-tr1-12-in '() ctx-tr1-4))
+    "TR10.12: attribute substitution using cvt:attr elements"
+    doc-tr10-12-out
+    (process-base-template doc-tr10-12-in '() ctx-tr10-4))
   (test
-    "TR1.13: cvt:for, insert text nodes"
-    doc-tr1-13-out
-    (process-base-template doc-tr1-13-in '() ctx-tr1-13))
+    "TR10.13: cvt:for, insert text nodes"
+    doc-tr10-13-out
+    (process-base-template doc-tr10-13-in '() ctx-tr10-13))
   (test
-    "TR1.14: cvt:for, unsorted, insert text in a <p>"
-    doc-tr1-14-out
-    (process-base-template doc-tr1-14-in '() ctx-tr1-13))
+    "TR10.14: cvt:for, unsorted, insert text in a <p>"
+    doc-tr10-14-out
+    (process-base-template doc-tr10-14-in '() ctx-tr10-13))
   (test
-    "TR1.15: cvt:var with object variable"
-    doc-tr1-15-out
-    (process-base-template doc-tr1-15-in '() ctx-tr1-13))
+    "TR10.15: cvt:var with object variable"
+    doc-tr10-15-out
+    (process-base-template doc-tr10-15-in '() ctx-tr10-13))
   (test
-    "TR1.16: cvt:for with sort-field, inserting object fields"
-    doc-tr1-16-out
-    (process-base-template doc-tr1-16-in '() ctx-tr1-13))
+    "TR10.16: cvt:for with sort-field, inserting object fields"
+    doc-tr10-16-out
+    (process-base-template doc-tr10-16-in '() ctx-tr10-13))
   (test
-    "TR1.17: cvt:for over a one-item list, inserting object fields"
-    doc-tr1-17-out
-    (process-base-template doc-tr1-17-in '() ctx-tr1-13))
+    "TR10.17: cvt:for over a one-item list, inserting object fields"
+    doc-tr10-17-out
+    (process-base-template doc-tr10-17-in '() ctx-tr10-13))
   (test
-    "TR1.18: insert variables defined in cvt:with"
-    doc-tr1-18-out
-    (process-base-template doc-tr1-18-in '() ctx-tr1-18))
+    "TR10.18: insert variables defined in cvt:with"
+    doc-tr10-18-out
+    (process-base-template doc-tr10-18-in '() ctx-tr10-18))
   (test-error
-    "TR1.19: referencing variables out of cvt:with scope [ERROR]"
-    (process-base-template doc-tr1-19-in '() ctx-tr1-18))
-  (test
-    "TR1.20: cvt:interpolate with a loop variable of length 1."
-    doc-tr1-20-out
-    (process-base-template doc-tr1-20-in '() ctx-tr1-20))
-  (test
-    "TR1.21: cvt:interpolate with a loop variable of length 2."
-    doc-tr1-21-out
-    (process-base-template doc-tr1-20-in '() ctx-tr1-21))
-  (test
-    "TR1.22: cvt:interpolate with a loop variable of length > 2."
-    doc-tr1-22-out
-    (process-base-template doc-tr1-20-in '() ctx-tr1-22))
-  (test
-    "TR1.23: use cvt:macro to insert a local variable"
-    doc-tr1-23-out
-    (process-base-template doc-tr1-23-in '() ctx-tr1-23)))
+    "TR10.19: referencing variables out of cvt:with scope [ERROR]"
+    (process-base-template doc-tr10-19-in '() ctx-tr10-18))
+
+  )
+
+;  (test
+;    "TR10.20: cvt:interpolate with a loop variable of length 1."
+;    doc-tr10-20-out
+;    (process-base-template doc-tr10-20-in '() ctx-tr10-20))
+;  (test
+;    "TR10.21: cvt:interpolate with a loop variable of length 2."
+;    doc-tr10-21-out
+;    (process-base-template doc-tr10-20-in '() ctx-tr10-21))
+;  (test
+;    "TR10.22: cvt:interpolate with a loop variable of length > 2."
+;    doc-tr10-22-out
+;    (process-base-template doc-tr10-20-in '() ctx-tr10-22))
+;  (test
+;    "TR10.23: use cvt:macro to insert a local variable"
+;    doc-tr10-18-out
+;    (process-base-template doc-tr10-23-in '() ctx-tr10-18)))
 
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+
+
+;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
+;;; ----  STRING FORMATTING  -----------------------------------------------
+;;; ------  Support data  --------------------------------------------------
+
+(define ctx-tr11-1
+  (standard-test-context '((tag . "water balloons"))))
+
+(define doc-tr11-1-in
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body 
+           (p 
+             "Tag: "
+             (cvt:var 
+               (@ (name "tag") (format "uri"))))))))
+
+(define doc-tr11-1-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body (p "Tag: " "water%20balloons")))))
+
+(define ctx-tr11-2
+  (standard-test-context '((tag . "water_balloons"))))
+
+(define doc-tr11-2-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body (p "Tag: " "water_balloons")))))
+
+;;; ========================================================================
+;;; ------  Run tests  -----------------------------------------------------
+
+(test-group "[TR11] Formatted Variable Insertion"
+  (test
+    "TR11.01: uri-encode a string with spaces"
+    doc-tr11-1-out
+    (process-base-template doc-tr11-1-in '() ctx-tr11-1))
+  (test
+    "TR11.02: uri-encode a string without spaces"
+    doc-tr11-2-out
+    (process-base-template doc-tr11-1-in '() ctx-tr11-2)))
+
+;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
 
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  TEMPLATE SET CONSTRUCTION  ---------------------------------------
 ;;; ------  Support data  --------------------------------------------------
 
-(define ctx-tr2-1
+(define ctx-tr20-1
   (make-context state: 'init
                 nsmap: '((#f . "http://www.w3.org/1999/xhtml")
-                         (cvt . "http://xmlns.therebetygers.net/civet/0.1"))))
+                         (cvt . "http://xmlns.therebetygers.net/civet/0.2"))))
 
-(define doc-tr2-1
+(define doc-tr20-1
   '(*TOP*
      (@
        (*NAMESPACES* 
          (#f "http://www.w3.org/1999/xhtml")
-         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt "http://xmlns.therebetygers.net/civet/0.2")))
      (cvt:template
        (html
          (head
@@ -754,12 +994,12 @@ XML
          (body
            (p "Should never see the light of day"))))))
 
-(define doc-tr2-2
+(define doc-tr20-2
   '(*TOP*
      (@
        (*NAMESPACES* 
          (#f "http://www.w3.org/1999/xhtml")
-         (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+         (cvt "http://xmlns.therebetygers.net/civet/0.2")))
      (html
        (cvt:template
          (@
@@ -769,11 +1009,11 @@ XML
          (body
            (p "Should never see the light of day"))))))
 
-(define doc-tr2-3-base-xml
+(define doc-tr20-3-base-xml
 #<<XML
 <html
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1"
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.2"
     xml:lang="en" lang="en">
   <head>
     <title></title>
@@ -799,12 +1039,12 @@ XML
 XML
 )
 
-(define doc-tr2-3-base-sxml
+(define doc-tr20-3-base-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
     (html
       (@
         (xml:lang "en")
@@ -827,12 +1067,12 @@ XML
           (@ (name "e"))
           (p "Block E from the base template."))))))
 
-(define doc-tr2-3-ext1-xml
+(define doc-tr20-3-ext1-xml
 #<<XML
 <cvt:template
-    extends="doc-tr2-3-base.html"
+    extends="doc-tr20-3-base.html"
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.2">
   <cvt:block name="a">
     <p>Block A from extension template 1.</p>
   </cvt:block>
@@ -843,15 +1083,15 @@ XML
 XML
 )
 
-(define doc-tr2-3-ext1-sxml
+(define doc-tr20-3-ext1-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
     (cvt:template
       (@
-        (extends "tr2-3-base.html"))
+        (extends "tr20-3-base.html"))
       (cvt:block
         (@ (name "a"))
         (p "Block A from extension template 1."))
@@ -859,12 +1099,12 @@ XML
         (@ (name "c"))
         "Block C from extension template 1."))))
 
-(define doc-tr2-3-ext2-xml
+(define doc-tr20-3-ext2-xml
 #<<XML
 <cvt:template
-    extends="doc-tr2-3-ext1.html"
+    extends="doc-tr20-3-ext1.html"
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.2">
   <cvt:block name="c">
     <p>Block C from extension template 2.</p>
   </cvt:block>
@@ -875,15 +1115,15 @@ XML
 XML
 )
 
-(define doc-tr2-3-ext2-sxml
+(define doc-tr20-3-ext2-sxml
   '(*TOP*
     (@
       (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
     (cvt:template
       (@
-        (extends "tr2-3-ext1.html"))
+        (extends "tr20-3-ext1.html"))
       (cvt:block
         (@ (name "c"))
         (p "Block C from extension template 2."))
@@ -891,12 +1131,12 @@ XML
         (@ (name "e"))
         "Block E from extension template 2."))))
 
-(define doc-tr2-3-out
+(define doc-tr20-3-out
   '(*TOP*
     (@
       (*NAMESPACES*
         (#f "http://www.w3.org/1999/xhtml")
-        (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+        (cvt "http://xmlns.therebetygers.net/civet/0.2")))
     (html
       (@
         (xml:lang "en")
@@ -909,18 +1149,18 @@ XML
         "Block D from the base template."
         "Block E from extension template 2."))))
 
-(define ctx-tr2-4
+(define ctx-tr20-4
   (make-context
     vars: '((copyrightYear . "2012-2013")
             (copyrightHolder . "Brenda B. Brenner")
             (rightsStatement . "You have no rights."))))
 
-(define doc-tr2-4-ext2-xml
+(define doc-tr20-4-ext2-xml
 #<<XML
 <cvt:template
-    extends="doc-tr2-3-ext1.html"
+    extends="doc-tr20-3-ext1.html"
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.2">
   <cvt:head>
     <cvt:defvar name="copyrightStatement">
       Copyright © <cvt:var name="copyrightYear" /> by <cvt:var name="copyrightHolder" />. <cvt:var name="rightsStatement" />
@@ -936,10 +1176,10 @@ XML
 XML
 )
 
-(define doc-tr2-4-ext2-sxml
+(define doc-tr20-4-ext2-sxml
   '(*TOP* (@ (*NAMESPACES* (#f "http://www.w3.org/1999/xhtml")
-                          (cvt "http://xmlns.therebetygers.net/civet/0.1")))
-         (cvt:template (@ (extends "doc-tr2-3-ext1.html"))
+                          (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+         (cvt:template (@ (extends "doc-tr20-3-ext1.html"))
                        (cvt:head
                          (cvt:defvar (@ (name "copyrightStatement"))
                                      "\n      Copyright © "
@@ -954,18 +1194,18 @@ XML
                                   "\n    Block E from extension template 2.\n  "))))
 
 
-(define ctx-tr2-5
+(define ctx-tr20-5
   (make-context
     vars: '((copyrightYear . "2012-2013") (copyrightHolder . "Brenda B. Brenner")
             (rightsStatement . "You have no rights.") (urlScheme . "http")
             (host . "some.blog.com") (articleID . "cafebabe"))))
 
-(define doc-tr2-5-ext2-xml
+(define doc-tr20-5-ext2-xml
 #<<XML
 <cvt:template
-    extends="doc-tr2-3-ext1.html"
+    extends="doc-tr20-3-ext1.html"
     xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.1">
+    xmlns:cvt="http://xmlns.therebetygers.net/civet/0.2">
   <cvt:head>
     <cvt:locale lang="ja" country="jp" encoding="shift-jis" />
     <cvt:defvar name="copyrightStatement">
@@ -986,12 +1226,12 @@ XML
 XML
 )
 
-(define doc-tr2-5-ext2-sxml
+(define doc-tr20-5-ext2-sxml
   '(*TOP* (@ (*NAMESPACES*
                (#f "http://www.w3.org/1999/xhtml")
-               (cvt "http://xmlns.therebetygers.net/civet/0.1")))
+               (cvt "http://xmlns.therebetygers.net/civet/0.2")))
     (cvt:template
-      (@ (extends "doc-tr2-3-ext1.html"))
+      (@ (extends "doc-tr20-3-ext1.html"))
       (cvt:head
         (cvt:locale (@ (lang "ja") (encoding "shift-jis") (country "jp")))
         (cvt:defvar (@ (name "copyrightStatement"))
@@ -1017,33 +1257,33 @@ XML
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
-(test-group "[TR2] Template Sets"
+(test-group "[TR20] Template Sets"
   (test-error
-    "TR2.01: cvt:template with no 'extends' attribute [ERROR]"
-    (process-base-template doc-tr2-1 '() ctx-tr2-1))
+    "TR20.01: cvt:template with no 'extends' attribute [ERROR]"
+    (process-base-template doc-tr20-1 '() ctx-tr20-1))
   (test-error
-    "TR2.02: cvt:template as descendant of the document element [ERROR]"
-    (process-base-template doc-tr2-2 '() ctx-tr2-1))
+    "TR20.02: cvt:template as descendant of the document element [ERROR]"
+    (process-base-template doc-tr20-2 '() ctx-tr20-1))
   (current-test-comparator block-data=?)
   (test
-    "TR2.03: build-template-set"
-    `(,doc-tr2-3-base-sxml
+    "TR20.03: build-template-set"
+    `(,doc-tr20-3-base-sxml
        ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
         (c . (() () (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
         (e . (() () (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
     (begin
-      (with-output-to-file "templates/doc-tr2-3-base.html"
-                           (lambda () (display doc-tr2-3-base-xml)))
-      (with-output-to-file "templates/doc-tr2-3-ext1.html"
-                           (lambda () (display doc-tr2-3-ext1-xml)))
-      (with-output-to-file "templates/doc-tr2-3-ext2.html"
-                           (lambda () (display doc-tr2-3-ext2-xml)))
+      (with-output-to-file "templates/doc-tr20-3-base.html"
+                           (lambda () (display doc-tr20-3-base-xml)))
+      (with-output-to-file "templates/doc-tr20-3-ext1.html"
+                           (lambda () (display doc-tr20-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr20-3-ext2.html"
+                           (lambda () (display doc-tr20-3-ext2-xml)))
       (let-values (((base blox)
-                    (build-template-set "doc-tr2-3-ext2.html" (make-context))))
+                    (build-template-set "doc-tr20-3-ext2.html" (make-context))))
         (list base blox))))
   (test
-    "TR2.04: build-template-set with one defvar"
-    `(,doc-tr2-3-base-sxml
+    "TR20.04: build-template-set with one defvar"
+    `(,doc-tr20-3-base-sxml
        ((a . (() ()
               (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
         (c . (()
@@ -1053,18 +1293,18 @@ XML
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights."))
               (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
     (begin
-      ; (with-output-to-file "templates/doc-tr2-3-base.html"
-                           ; (lambda () (display doc-tr2-3-base-xml)))
-      ; (with-output-to-file "templates/doc-tr2-3-ext1.html"
-                           ; (lambda () (display doc-tr2-3-ext1-xml)))
-      (with-output-to-file "templates/doc-tr2-4-ext2.html"
-                           (lambda () (display doc-tr2-4-ext2-xml)))
+      ; (with-output-to-file "templates/doc-tr20-3-base.html"
+                           ; (lambda () (display doc-tr20-3-base-xml)))
+      ; (with-output-to-file "templates/doc-tr20-3-ext1.html"
+                           ; (lambda () (display doc-tr20-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr20-4-ext2.html"
+                           (lambda () (display doc-tr20-4-ext2-xml)))
       (let-values (((base blox)
-                    (build-template-set "doc-tr2-4-ext2.html" ctx-tr2-4)))
+                    (build-template-set "doc-tr20-4-ext2.html" ctx-tr20-4)))
         (list base blox))))
   (test
-    "TR2.05: build-template-set with a locale def and 3 defvars"
-    `(,doc-tr2-3-base-sxml
+    "TR20.05: build-template-set with a locale def and 3 defvars"
+    `(,doc-tr20-3-base-sxml
        ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
         (c . (((lang . "ja") (encoding . "shift-jis") (country . "jp"))
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights.")
@@ -1077,14 +1317,14 @@ XML
                (articleURL . "http://some.blog.com/articles/cafebabe"))
               (cvt:block (@ (name "e")) (a (@ (cvt:href "articleURL")) "Check out this great article!"))))))
     (begin
-      ; (with-output-to-file "templates/doc-tr2-3-base.html"
-                           ; (lambda () (display doc-tr2-3-base-xml)))
-      ; (with-output-to-file "templates/doc-tr2-3-ext1.html"
-                           ; (lambda () (display doc-tr2-3-ext1-xml)))
-      (with-output-to-file "templates/doc-tr2-5-ext2.html"
-                           (lambda () (display doc-tr2-5-ext2-xml)))
+      ; (with-output-to-file "templates/doc-tr20-3-base.html"
+                           ; (lambda () (display doc-tr20-3-base-xml)))
+      ; (with-output-to-file "templates/doc-tr20-3-ext1.html"
+                           ; (lambda () (display doc-tr20-3-ext1-xml)))
+      (with-output-to-file "templates/doc-tr20-5-ext2.html"
+                           (lambda () (display doc-tr20-5-ext2-xml)))
       (let-values (((base blox)
-                    (build-template-set "doc-tr2-5-ext2.html" ctx-tr2-5)))
+                    (build-template-set "doc-tr20-5-ext2.html" ctx-tr20-5)))
         (list base blox))))
   (current-test-comparator equal?))
 
@@ -1116,13 +1356,13 @@ XML
 (test-group "Rendering"
   (test-assert
     "Minimal example: Single template."
-    (render "doc-tr2-3-base.html" (make-context) file: "doc-tr2-3-base-out.html"))
+    (render "doc-tr20-3-base.html" (make-context) file: "doc-tr20-3-base-out.html"))
   (test-assert
     "Template set with blocks, no variables."
-    (render "doc-tr2-3-ext2.html" (make-context) file: "doc-tr2-3-ext2-out.html"))
+    (render "doc-tr20-3-ext2.html" (make-context) file: "doc-tr20-3-ext2-out.html"))
   (test-assert
     "Template set w/ base, 2 extensions, variables, & locale"
-    (render "doc-tr2-5-ext2.html" ctx-tr2-5 file: "doc-tr2-5-ext2-out.html")))
+    (render "doc-tr20-5-ext2.html" ctx-tr20-5 file: "doc-tr20-5-ext2-out.html")))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
