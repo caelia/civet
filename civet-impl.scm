@@ -46,7 +46,7 @@
 
 (define *civet-ns-prefix* (make-parameter 'cvt))
  
-(define *civet-ns-uri* (make-parameter "http://xmlns.therebetygers.net/civet/0.1"))
+(define *civet-ns-uri* (make-parameter "http://xmlns.therebetygers.net/civet/0.2"))
 
 (define *default-nsmap*
   (make-parameter
@@ -305,10 +305,11 @@
 ;;   - locale:  containing language, country, encoding, and other localization
 ;;              parameters
 ;;   - blocks:  containing template blocks extracted from extension templates
+;;   - macros:  containing node-sets defined with cvt:defmacro
 ;; --and the 'state' symbol, whose value is one of:
 ;;     init template head block
 (define (make-context #!key (vars '()) (attrs '()) (nsmap (*default-nsmap*))
-                      (locale '()) (blocks '()) (state 'init))
+                      (locale '()) (blocks '()) (macros '()) (state 'init))
   (lambda (cmd . args)
     (case cmd
       ((set-var!)
@@ -356,6 +357,12 @@
        (alist-update! (car args) (cadr args) blocks))
       ((get-blocks)
        blocks)
+      ((get-macro)
+       (alist-ref (car args) macros))
+      ((set-macro!)
+       (alist-update! (car args) (cadr args) macros))
+      ((get-macros)
+       macros)
       ((set-locale!)
        (set! locale (car args)))
       ((set-lang!)
@@ -377,18 +384,21 @@
 (define (context->context ctx #!key (+vars #f) (-vars #f) (+attrs #f)
                           (-attrs #f) (+nsmap #f) (-nsmap #f)
                           (+locale #f) (-locale #f) (+blocks #f)
-                          (-blocks #f) (state #f))
+                          (-blocks #f) (+macros #f) (-macros #f)
+                          (state #f))
   (let ((prev-vars (ctx 'get-vars))
         (prev-attrs (ctx 'get-attrs))
         (prev-nsmap (ctx 'get-nsmap))
         (prev-locale (ctx 'get-locale))
         (prev-blocks (ctx 'get-blocks))
+        (prev-macros (ctx 'get-macros))
         (prev-state (ctx 'get-state)))
     (make-context vars: (alist-merge (alist-except prev-vars -vars) +vars)
                   attrs: (alist-merge (alist-except prev-attrs -attrs) +attrs)
                   nsmap: (alist-merge (alist-except prev-nsmap -nsmap) +nsmap)
                   locale: (alist-merge (alist-except prev-locale -locale) +locale)
                   blocks: (alist-merge (alist-except prev-blocks -blocks) +blocks)
+                  macros: (alist-merge (alist-except prev-macros -macros) +macros)
                   state: (or state prev-state))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
@@ -451,7 +461,9 @@
       locale-data)))
 
 (define (get-template-vars template ctx)
-  (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*))))
+  ; (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*))))
+  ; We want this to work in a base template
+  (let ((sp1 (sxpath '(* cvt:head cvt:defvar) (*sxpath-nsmap*))))
     (filter
       identity
       (map
@@ -459,6 +471,7 @@
         (sp1 template)))))
 
 (define (build-template-set name ctx)
+  ;;; ??? FIXME ??? -- do these sxpath exprs work without namespace mappings?
   (let ((sp1 (sxpath '(cvt:template *)))
         (sp2 (sxpath '(@ name *text*)))
         (nsmap (ctx 'get-nsmap)))
@@ -571,6 +584,13 @@
         (list value))
       (else '()))))
 
+(define (%cvt:macro node ctx)
+  (let* ((attrs (get-attrs node))
+         (macname (get-attval attrs 'name))
+         (macro (ctx 'get-macro macname)))
+    (if macro
+      (process-tree macro ctx)
+      (eprintf "Unrecognized macro name: ~A" macname))))
 
 (define (%cvt:if node ctx)
   (let* ((attrs (get-attrs node))
@@ -607,8 +627,21 @@
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
          (var-name (get-attval attrs "in"))
-         (value (ctx 'get-var var-name)))
-    (if value
+         (valuez (ctx 'get-var var-name))
+         (interp-sx (sxpath '(cvt:interpolate) (*sxpath-nsmap*)))
+         (interp-nodes (interp-sx node))
+         (interps
+           (foldl
+             (lambda (ints node)
+               (let* ((mode* (get-attval (get-attrs node) "mode"))
+                      (mode (or mode* 'default)))
+                 (cons `(,mode . ,(get-kids node)) ints)))
+             '()
+             interp-nodes))
+         (pair-interp (alist-ref 'pair interps))
+         (last-interp (alist-ref 'last interps))
+         (default-interp (alist-ref 'default interps))) 
+    (if valuez
       (let* ((local-key (string->symbol (get-attval attrs "each")))
              (type (string->symbol (get-attval attrs "type" "string")))
              (sort-type (string->symbol (get-attval attrs "sort" "auto")))
@@ -631,13 +664,36 @@
                       base-sortfun)))
              (sorted
                (if sortfun
-                 (sort value sortfun)
-                 value)))
+                 (sort valuez sortfun)
+                 valuez)))
         (join
-          (map
-            (lambda (elt)
-              (process-tree content (context->context ctx +vars: (list (cons local-key elt)))))
-            sorted))))))
+          (let ((is-pair (= (length valuez) 2)))
+            (let loop ((vals valuez)
+                       (output '()))
+              (if (null? vals)
+                (reverse output)
+                (let* ((subtree
+                         (process-tree
+                           content
+                           (context->context ctx +vars: (list (cons local-key (car vals))))))
+                       (nvals (length vals))
+                       (interpolations
+                         (cond
+                           ((and pair-interp is-pair (= nvals 2))
+                            (process-tree pair-interp ctx))
+                           ((and last-interp (= nvals 2))
+                            (process-tree last-interp ctx))
+                           ((and default-interp (> nvals 1))
+                            (process-tree default-interp ctx))
+                           (else
+                             '()))))
+                  (loop
+                    (cdr vals)
+                    (cons interpolations (cons subtree output))))))))))))
+
+
+(define (%cvt:interpolate node ctx)
+  #f)
 
 (define (%cvt:with node ctx)
   (let* ((content (get-kids node))
@@ -654,20 +710,24 @@
          (val-exp (sxpath '(@ value *text*)))
          (kids-exp (sxpath '(*any*)))
          (name* (name-exp node))
-         (name (string->symbol (car name*)))
+         (name (and (pair? name*) (string->symbol (car name*))))
          (value* (val-exp node))
          (kids (kids-exp node))
          (value
            (cond
-             ((not (null? value*)) (car value*))
-             ((not (null? kids))
+             ((pair? value*) (car value*))
+             ((pair? kids)
               (let ((kids-result (process-tree kids ctx)))
                 (if (every string? kids-result)
                   (apply string-append kids-result)
                   kids-result)))
              (else #f))))
-    (and value
+    (and name
+         value
          (cons name value))))
+
+(define (%cvt:defmacro node ctx)
+  #f)
 
 (define (%cvt:locale node ctx) '())
 
@@ -775,14 +835,17 @@
                   ((locale) (%cvt:locale tree ctx))
                   ; ((defvar) (%cvt:defvar tree ctx))
                   ((defvar) '())
+                  ((defmacro) '())
                   ((var) (%cvt:var tree ctx))
+                  ((macro) (%cvt:macro tree ctx))
                   ;; cvt:attr should be handled in the handler for its parent element
                   ((attr) '())
                   ((with) (%cvt:with tree ctx))
                   ((if) (%cvt:if tree ctx))
                   ;; cvt:else should already be handled by the %cvt:if handler
                   ((else) '())
-                  ((for) (%cvt:for tree ctx)))
+                  ((for) (%cvt:for tree ctx))
+                  ((interpolate) '()))
                 ;; attributes are handled by the handler for their element
                 (cond
                   ((eqv? head '@) '())
