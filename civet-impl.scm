@@ -153,6 +153,18 @@
                           ((list? tail) "<LIST>"))
                         ")"))))))
 
+;; This is just for debugging purposes
+(define (log-var name value #!optional (filename "var.log"))
+  (let ((f (file-open filename (+ open/wronly open/creat open/append)))
+        (p (open-output-file* f)))
+    (with-output-to-port
+      p
+      (lambda ()
+        (print name)
+        (pp value)
+        (newline)))
+    (close-output-port p)))
+
 (define (apply-formatting str formats)
   (let ((fmts (map string->symbol (string-split formats))))
     (foldl
@@ -494,6 +506,7 @@
             (eprintf "Parent template '~A' not found.\n" parent))
           (let ((locale (get-template-locale template))
                 (vars (get-template-vars template ctx))
+                (macros (get-template-macros template ctx))
                 (kids (sp1 template)))
             (loop
               (load-template parent nsmap)
@@ -504,7 +517,7 @@
                            (name (string->symbol (car name*))))
                       (if (alist-ref name blox)
                         blox
-                        (cons (cons name (list locale vars k)) blox)))
+                        (cons (cons name (list locale vars macros k)) blox)))
                     blox))
                 blocks kids))))
         (values template blocks)))))
@@ -561,14 +574,16 @@
       (override
         (let ((block-locale (car override))
               (block-vars (cadr override))
-              (block (caddr override)))
+              (block-macros (caddr override))
+              (block (cadddr override)))
           (%cvt:block
             block
             (context->context
               ctx
               -blocks: (list block-name)
               +locale: block-locale
-              +vars: block-vars))))
+              +vars: block-vars
+              +macros: block-macros))))
       (else
         (process-tree
           content
@@ -652,6 +667,7 @@
          (last-interp (alist-ref 'last interps))
          (default-interp (alist-ref 'default interps))) 
     (if valuez
+      (log-var "valuez" valuez)
       (let* ((local-key (string->symbol (get-attval attrs "each")))
              (type (string->symbol (get-attval attrs "type" "string")))
              (sort-type (string->symbol (get-attval attrs "sort" "auto")))
