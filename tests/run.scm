@@ -727,8 +727,8 @@ XML
        (cvt:for
          (@ (in "names") (each "name"))
          (cvt:interpolate ", ")
-         (cvt:interpolate (@ (mode "pair")) " &amp; ")
-         (cvt:interpolate (@ (mode "last")) ", &amp; ")
+         (cvt:interpolate (@ (mode "pair")) " & ")
+         (cvt:interpolate (@ (mode "last")) ", & ")
          (cvt:var (@ (name "name"))))))))
 
 (define doc-tr10-20-out
@@ -740,7 +740,7 @@ XML
    (html 
      (@ (xml:lang "en") (lang "en"))
      (head (title))
-     (body "\n    Sally\n  "))))
+     (body "Sally"))))
 
 (define ctx-tr10-21
   (standard-test-context '((names . ("Sally" "Dorian")))))
@@ -754,7 +754,7 @@ XML
    (html 
      (@ (xml:lang "en") (lang "en"))
      (head (title))
-     (body "\n    Sally & Dorian\n  "))))
+     (body "Dorian" " & " "Sally"))))
 
 (define ctx-tr10-22
   (standard-test-context '((names . ("Amanda" "Brendan" "Caroline" "Daniel")))))
@@ -768,7 +768,7 @@ XML
    (html 
      (@ (xml:lang "en") (lang "en"))
      (head (title))
-     (body "\n    Amanda, Brendan, Caroline, & Daniel\n  "))))
+     (body "Amanda" ", " "Brendan" ", " "Caroline" ", & " "Daniel"))))
 
 (define doc-tr10-23-in
 '(*TOP* 
@@ -884,25 +884,28 @@ XML
   (test-error
     "TR10.19: referencing variables out of cvt:with scope [ERROR]"
     (process-base-template doc-tr10-19-in '() ctx-tr10-18))
-
-  )
-
-;  (test
-;    "TR10.20: cvt:interpolate with a loop variable of length 1."
-;    doc-tr10-20-out
-;    (process-base-template doc-tr10-20-in '() ctx-tr10-20))
-;  (test
-;    "TR10.21: cvt:interpolate with a loop variable of length 2."
-;    doc-tr10-21-out
-;    (process-base-template doc-tr10-20-in '() ctx-tr10-21))
-;  (test
-;    "TR10.22: cvt:interpolate with a loop variable of length > 2."
-;    doc-tr10-22-out
-;    (process-base-template doc-tr10-20-in '() ctx-tr10-22))
-;  (test
-;    "TR10.23: use cvt:macro to insert a local variable"
-;    doc-tr10-18-out
-;    (process-base-template doc-tr10-23-in '() ctx-tr10-18)))
+  (test
+    "TR10.20: cvt:interpolate with a loop variable of length 1."
+    doc-tr10-20-out
+    (process-base-template doc-tr10-20-in '() ctx-tr10-20))
+  (test
+    "TR10.21: cvt:interpolate with a loop variable of length 2."
+    doc-tr10-21-out
+    (process-base-template doc-tr10-20-in '() ctx-tr10-21))
+  (test
+    "TR10.22: cvt:interpolate with a loop variable of length > 2."
+    doc-tr10-22-out
+    (process-base-template doc-tr10-20-in '() ctx-tr10-22))
+  (test
+    "TR10.23: use cvt:macro to insert a local variable"
+    doc-tr10-18-out
+    (process-base-template
+      doc-tr10-23-in
+      '((fake .
+        (() ()
+         ((local_url . (p (cvt:var (@ (name "base_url"))) "/" (cvt:var (@ (name "local_part"))))))
+         ())))
+      ctx-tr10-18)))
 
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
@@ -1268,9 +1271,9 @@ XML
   (test
     "TR20.03: build-template-set"
     `(,doc-tr20-3-base-sxml
-       ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
-        (c . (() () (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
-        (e . (() () (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
+       ((a . (() () () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
+        (c . (() () () (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
+        (e . (() () () (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
     (begin
       (with-output-to-file "templates/doc-tr20-3-base.html"
                            (lambda () (display doc-tr20-3-base-xml)))
@@ -1284,13 +1287,15 @@ XML
   (test
     "TR20.04: build-template-set with one defvar"
     `(,doc-tr20-3-base-sxml
-       ((a . (() ()
+       ((a . (() () ()
               (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
         (c . (()
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights."))
+              ()
               (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
         (e . (()
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights."))
+              ()
               (cvt:block (@ (name "e")) "Block E from extension template 2.")))))
     (begin
       ; (with-output-to-file "templates/doc-tr20-3-base.html"
@@ -1305,16 +1310,18 @@ XML
   (test
     "TR20.05: build-template-set with a locale def and 3 defvars"
     `(,doc-tr20-3-base-sxml
-       ((a . (() () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
+       ((a . (() () () (cvt:block (@ (name "a")) (p "Block A from extension template 1."))))
         (c . (((lang . "ja") (encoding . "shift-jis") (country . "jp"))
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights.")
                (junk . "hullo")
                (articleURL . "http://some.blog.com/articles/cafebabe"))
+              ()
               (cvt:block (@ (name "c")) (p "Block C from extension template 2."))))
         (e . (((lang . "ja") (encoding . "shift-jis") (country . "jp"))
               ((copyrightStatement . "Copyright © 2012-2013 by Brenda B. Brenner. You have no rights.")
                (junk . "hullo")
                (articleURL . "http://some.blog.com/articles/cafebabe"))
+              ()
               (cvt:block (@ (name "e")) (a (@ (cvt:href "articleURL")) "Check out this great article!"))))))
     (begin
       ; (with-output-to-file "templates/doc-tr20-3-base.html"

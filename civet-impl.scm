@@ -18,6 +18,7 @@
 (import files)
 (import posix)
 (import utils)
+(import ports)
 (import srfi-1)
 (import srfi-69)
 (import irregex)
@@ -66,6 +67,8 @@
       (char . (,char<? ,char>?))
       (number . (,< ,>))
       (boolean . (,(lambda (a b) (or (not a) b)) ,(lambda (a b) (or a (not b))))))))
+
+(define *handling-exception* (make-parameter #f))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -155,8 +158,8 @@
 
 ;; This is just for debugging purposes
 (define (log-var name value #!optional (filename "var.log"))
-  (let ((f (file-open filename (+ open/wronly open/creat open/append)))
-        (p (open-output-file* f)))
+  (let* ((f (file-open filename (+ open/wronly open/creat open/append)))
+         (p (open-output-file* f)))
     (with-output-to-port
       p
       (lambda ()
@@ -465,29 +468,35 @@
             (*sxpath-nsmap*))))
     (sp template)))
 
-(define (get-template-locale template)
+(define (get-template-locale template #!optional (top #t))
   ; (let* ((sp (sxpath '(cvt:template cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
   ; We want this to work in a base template
-  (let* ((sp (sxpath '(* cvt:head cvt:locale @ *) (*sxpath-nsmap*)))
+  (let* ((pexp
+           (if top
+             '(* cvt:head cvt:locale @ *)
+             '(cvt:head cvt:locale @ *)))
+         (sp (sxpath pexp (*sxpath-nsmap*)))
          (locale-data (sp template)))
     (map
       (lambda (elt) (cons (car elt) (cadr elt)))
       locale-data)))
 
-(define (get-template-vars template ctx)
+(define (get-template-vars template ctx #!optional (top #t))
   ; (let ((sp1 (sxpath '(cvt:template cvt:head cvt:defvar) (*sxpath-nsmap*))))
   ; We want this to work in a base template
-  (let ((sp1 (sxpath '(* cvt:head cvt:defvar) (*sxpath-nsmap*))))
+  (let* ((pexp (if top '(* cvt:head cvt:defvar) '(cvt:head cvt:defvar)))
+         (sp1 (sxpath pexp (*sxpath-nsmap*))))
     (filter
       identity
       (map
         (lambda (def) (%cvt:defvar def ctx))
         (sp1 template)))))
 
-(define (get-template-macros template ctx)
-  (let ((sp1 (sxpath '(* cvt:head cvt:defmacro) (*sxpath-nsmap*))))
+(define (get-template-macros template ctx #!optional (top #t))
+  (let* ((pexp (if top '(* cvt:head cvt:defmacro) '(cvt:head cvt:defmacro)))
+         (sp1 (sxpath pexp (*sxpath-nsmap*))))
     (filter
-      pair?
+      identity
       (map
         (lambda (def) (%cvt:defmacro def ctx))
         (sp1 template)))))
@@ -549,7 +558,9 @@
            (if nsmap
              (alist-merge default-nsmap nsmap)
              default-nsmap))
-         (xp (sxpath '(*any*) nsmap)))
+         ; (xp (sxpath '(*any*) nsmap)))
+         ; I'm not sure this is right, but *any* is clearly wrong
+         (xp (sxpath '((*not* @)) nsmap)))
     (xp node)))
 
 (define (except-attlist node #!optional (nsmap #f))
@@ -570,7 +581,6 @@
          (block-name (string->symbol (get-attval attrs "name")))
          (override (ctx 'get-block block-name)))
     (cond
-      ((null? content) #f)
       (override
         (let ((block-locale (car override))
               (block-vars (cadr override))
@@ -584,6 +594,7 @@
               +locale: block-locale
               +vars: block-vars
               +macros: block-macros))))
+      ((null? content) '())
       (else
         (process-tree
           content
@@ -612,7 +623,7 @@
 (define (%cvt:macro node ctx)
   (let* ((attrs (get-attrs node))
          (macname (get-attval attrs 'name))
-         (macro (ctx 'get-macro macname)))
+         (macro (ctx 'get-macro (string->symbol macname))))
     (if macro
       (process-tree macro ctx)
       (eprintf "Unrecognized macro name: ~A" macname))))
@@ -659,7 +670,7 @@
            (foldl
              (lambda (ints node)
                (let* ((mode* (get-attval (get-attrs node) "mode"))
-                      (mode (or mode* 'default)))
+                      (mode (or (and mode* (string->symbol mode*)) 'default)))
                  (cons `(,mode . ,(get-kids node)) ints)))
              '()
              interp-nodes))
@@ -667,7 +678,6 @@
          (last-interp (alist-ref 'last interps))
          (default-interp (alist-ref 'default interps))) 
     (if valuez
-      (log-var "valuez" valuez)
       (let* ((local-key (string->symbol (get-attval attrs "each")))
              (type (string->symbol (get-attval attrs "type" "string")))
              (sort-type (string->symbol (get-attval attrs "sort" "auto")))
@@ -693,8 +703,8 @@
                  (sort valuez sortfun)
                  valuez)))
         (join
-          (let ((is-pair (= (length valuez) 2)))
-            (let loop ((vals valuez)
+          (let ((is-pair (= (length sorted) 2)))
+            (let loop ((vals sorted)
                        (output '()))
               (if (null? vals)
                 (reverse output)
@@ -753,7 +763,11 @@
          (cons name value))))
 
 (define (%cvt:defmacro node ctx)
-  (get-kids node))
+  (let* ((name-exp (sxpath '(@ name *text*)))
+         (name* (name-exp node))
+         (name (and (pair? name*) (string->symbol (car name*)))))
+    (and name
+         (cons name (get-kids node)))))
 
 (define (%cvt:locale node ctx) '())
 
@@ -920,7 +934,20 @@
        (eprintf "The document element of the base template is '~A', which is invalid." head))
       (else
         (assert (eqv? (context 'get-state) 'top))
-        (let ((child-ctx (context->context context state: 'template +blocks: block-data)))
+        (let* ((locale
+                 (get-template-locale template #f))
+               (vars
+                 (get-template-vars template context #f))
+               (macros
+                 (get-template-macros template context #f))
+               (child-ctx
+                 (context->context
+                   context
+                   state: 'template
+                   +blocks: block-data
+                   +locale: locale
+                   +vars: vars
+                   +macros: macros)))
           (car (%element template child-ctx)))))))
 
 (define (process-template-set name context)
