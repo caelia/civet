@@ -578,7 +578,8 @@
 (define (%cvt:block node ctx)
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
-         (block-name (string->symbol (get-attval attrs "name")))
+         ; (block-name (string->symbol (get-attval attrs "name")))
+         (block-name (string->symbol (get-attval attrs 'name)))
          (override (ctx 'get-block block-name)))
     (cond
       (override
@@ -662,14 +663,14 @@
 (define (%cvt:for node ctx)
   (let* ((attrs (get-attrs node))
          (content (get-kids node))
-         (var-name (get-attval attrs "in"))
+         (var-name (get-attval attrs 'in))
          (valuez (ctx 'get-var var-name))
          (interp-sx (sxpath '(cvt:interpolate) (*sxpath-nsmap*)))
          (interp-nodes (interp-sx node))
          (interps
            (foldl
              (lambda (ints node)
-               (let* ((mode* (get-attval (get-attrs node) "mode"))
+               (let* ((mode* (get-attval (get-attrs node) 'mode))
                       (mode (or (and mode* (string->symbol mode*)) 'default)))
                  (cons `(,mode . ,(get-kids node)) ints)))
              '()
@@ -678,12 +679,18 @@
          (last-interp (alist-ref 'last interps))
          (default-interp (alist-ref 'default interps))) 
     (if valuez
-      (let* ((local-key (string->symbol (get-attval attrs "each")))
-             (type (string->symbol (get-attval attrs "type" "string")))
-             (sort-type (string->symbol (get-attval attrs "sort" "auto")))
-             (sort-field* (get-attval attrs "sort-field"))
+;      (let* ((local-key (string->symbol (get-attval attrs "each")))
+;             (type (string->symbol (get-attval attrs "type" "string")))
+;             (sort-type (string->symbol (get-attval attrs "sort" "auto")))
+;             (sort-field* (get-attval attrs "sort-field"))
+;             (sort-field (and sort-field* (string->symbol sort-field*)))
+;             (order (string->symbol (get-attval attrs "order" "asc")))
+      (let* ((local-key (string->symbol (get-attval attrs 'each)))
+             (type (string->symbol (get-attval attrs 'type "string")))
+             (sort-type (string->symbol (get-attval attrs 'sort "auto")))
+             (sort-field* (get-attval attrs 'sort-field))
              (sort-field (and sort-field* (string->symbol sort-field*)))
-             (order (string->symbol (get-attval attrs "order" "asc")))
+             (order (string->symbol (get-attval attrs 'order "asc")))
              (base-sortfun
                (case sort-type
                  ((alpha) (if (eqv? order 'asc) string<? string>?))
@@ -774,28 +781,23 @@
 ;; FIXME: seems like there should be a more efficient way to
 ;;   get the value of a child element
 (define (%cvt:attr elt ctx)
-  (let* ((name-exp (sxpath '(@ name *text*) (*sxpath-nsmap*)))
-         (val-exp (sxpath '(@ value *text*) (*sxpath-nsmap*)))
-         (type-exp (sxpath '(@ type *text*) (*sxpath-nsmap*)))
-         (fmt-exp (sxpath '(@ format *text*) (*sxpath-nsmap*)))
-         (if-exp (sxpath '(cvt:if) (*sxpath-nsmap*)))
-         (var-exp (sxpath '(cvt:var) (*sxpath-nsmap*)))
-         (txt-exp (sxpath '(*text*) (*sxpath-nsmap*)))
-         (name (name-exp elt))
-         (if-child (if-exp elt))
-         (var-child (var-exp elt))
-         (txt-child (txt-exp elt))
-         (child-value
-           (cond
-             ;; I believe (pair? x) is equivalent to (not (null? x)) for this purpose
-             ((pair? if-child) (car (%cvt:if if-child ctx)))
-             ((pair? var-child) (car (%cvt:var var-child ctx)))
-             ((pair? txt-child) txt-child)
-             (else #f)))
-         (value (or child-value (car (val-exp elt)))))
+  (let* ((attrs (get-attrs elt))
+         (name (get-attval attrs 'name))
+         (value* (get-attval attrs 'value))
+         (value
+           (or value*
+               (let* ((kids (get-kids elt))
+                      (raw-val (process-tree kids ctx)))
+                 (cond
+                   ((string? raw-val)
+                    raw-val)
+                   ((null? raw-val)
+                    "")
+                   (else
+                     (string-join raw-val "")))))))
     ;; FIXME: This simply uses the raw string value of the attribute,
     ;;   no accounting for type or format
-    (list (string->symbol (car name)) value))) 
+    (list (string->symbol name) (string-trim-both value))))
 
 ;; Apparently there are no unknown cvt: elements, but I'll keep this
 ;;   for the time being, just in case.
@@ -833,9 +835,9 @@
          (value* (cadr attr))
          (localname (cvt-name? name* ctx))
          (value
-           (if localname
-             (ctx 'get-var value*)
-             value*))
+           (or (and localname
+                    (ctx 'get-var value*))
+               value*))
          (name (or (and localname (string->symbol localname)) name*)))
     (list name value)))
 
