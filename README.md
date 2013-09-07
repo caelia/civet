@@ -67,9 +67,9 @@ This function takes an SXML template, TEMPLATE, and an alist containing SXML
 blocks (which generally will have been read from extension templates, but
 could potentially be created programmatically), and a CONTEXT object, and
 returns a transformed SXML document. The BLOCK-DATA alist consists of
-`'((NAME . (LOCALE VARS BLOCK)) ...), where NAME corresponds to the name of
-a block in the source template, LOCALE and VARS are, respectively, locale
-options and variables read from the template, and BLOCK is an SXML fragment
+`'((NAME . (LOCALE VARS MACROS BLOCK)) ...), where NAME corresponds to the name of
+a block in the source template, LOCALE, VARS, and MACROS are, respectively, locale
+options, variables, and macros read from the template, and BLOCK is an SXML fragment
 consisting of a `cvt:block` element and its content.
 
 #### [procedure]  `(load-template NAME #!optional (NSMAP '())`
@@ -114,6 +114,8 @@ information during the processing run. The following keywords are supported:
 
 - **blocks**    alist, default = '()
 
+- **macros**    alist, default = '()
+
 - **state**     symbol, default = 'init
 
 Directly manipulating the context object is not recommended. In general you
@@ -126,7 +128,7 @@ or set any values, the closure responds to the following messages:
  
 - `(set-vars! ALIST)`
 
-- `(get-var SYMBOL)`
+- `(get-var STRING)`
 
 - `(get-vars)`
 
@@ -157,6 +159,12 @@ or set any values, the closure responds to the following messages:
 - `(get-block SYMBOL)`
 
 - `(get-blocks)`
+
+- `(set-macro! SYMBOL SXML-FRAGMENT)` 
+
+- `(get-macro SYMBOL)`
+
+- `(get-macros)`
 
 - `(set-locale! ALIST)`
 
@@ -191,6 +199,8 @@ keyword arguments are supported.
 
 - **+blocks**  Updates or sets one or more template blocks. Takes an alist.
 
+- **+macros**  Updates or sets one or more template macros. Takes an alist.
+
 - **-vars**    Unsets one or more variables. Takes a list of symbols.
 
 - **-attrs**   Unsets one or more attributes. Takes a list of symbols.
@@ -200,6 +210,8 @@ keyword arguments are supported.
 - **-locale**  Unsets one or more locale options. Takes a list of symbols.
 
 - **-blocks**  Unsets one or more template blocks. Takes a list of symbols.
+
+- **-macros**  Unsets one or more template macros. Takes a list of symbols.
 
 - **state**    Sets the state. Takes a symbol
 
@@ -252,7 +264,7 @@ your templates.
 The namespace URI for Civet vocabulary elements. Overriding this is not
 recommended.
 
-**Default:** `"http://xmlns.therebetygers.net/civet/0.1"`
+**Default:** `"http://xmlns.therebetygers.net/civet/0.2"`
 
 #### [parameter] \*default-nsmap\*
 
