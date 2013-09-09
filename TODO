@@ -1,1 +1,1 @@
-[2013-08-27] variables defined in a cvt:with are not accessible to following elements
+[2013-09-08] Shouldn't cvt:attr have a 'var' attribute allowing for variable substitution?

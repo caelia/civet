@@ -24,16 +24,19 @@ Vin''' blogging library. The name comes from CVT, which is an abbreviation for
 
 Civet supports insertion of dynamic content via variables, common control
 structures such as '''if''' and '''for''', and has a simple inheritance
-mechanism.
+mechanism. It does not, and probably will never, support the inclusion of
+arbitrary code in Scheme or any other language.
 
 All Civet templates must be well-formed XML. Each template consists of
 markup from the target document type (e.g., XHTML), which represents literal
 output, combined with markup from the Civet template vocabulary, which
-controls the structure of the output and inserts dynamic content.
+inserts dynamic content and controls the structure of the output. For the
+sake of brevity, these two types of markup may be referred to as 'literal
+markup' and 'template markup' respectively.
 
 A '''template set''' consists of a '''base template''' and one or more '''extension
 templates'''. The base template determines the document type of the output and
-its overall structure. As of Version 0.1, the content of extension templates is
+its overall structure. As of Version 0.2, the content of extension templates is
 restricted to metadata contained in a '''head''' element, and content contained
 in one or more '''blocks'''. Any content outside of these structures in an
 extension template will be ignored. 
@@ -83,10 +86,11 @@ This function takes an SXML template, TEMPLATE, and an alist containing SXML
 blocks (which generally will have been read from extension templates, but
 could potentially be created programmatically), and a CONTEXT object, and
 returns a transformed SXML document. The BLOCK-DATA alist consists of
-`'((NAME . (LOCALE VARS BLOCK)) ...), where NAME corresponds to the name of
-a block in the source template, LOCALE and VARS are, respectively, locale
-options and variables read from the template, and BLOCK is an SXML fragment
-consisting of a {{cvt:block}} element and its content.
+`'((NAME . (LOCALE VARS MACROS BLOCK)) ...), where NAME corresponds to the
+name of a block in the source template, LOCALE, VARS, and MACROS are,
+respectively, locale options, variables, and macros read from the template,
+and BLOCK is an SXML fragment consisting of a {{cvt:block}} element and its
+content.
 
 <procedure>(load-template NAME #!optional (NSMAP '())</procedure>
 
@@ -129,6 +133,8 @@ information during the processing run. The following keywords are supported:
 * {{locale}}    alist, default = '()
 
 * {{blocks}}    alist, default = '()
+
+* {{macros}}    alist, default = '()
 
 * {{state}}     symbol, default = 'init
 
@@ -174,6 +180,12 @@ or set any values, the closure responds to the following messages:
 
 * {{(get-blocks)}}
 
+* {{(set-macro! SYMBOL SXML-FRAGMENT)}} 
+
+* {{(get-macro SYMBOL)}}
+
+* {{(get-macros)}}
+
 * {{(set-locale! ALIST)}}
 
 * {{(set-lang! LANG-CODE)}}
@@ -207,6 +219,8 @@ keyword arguments are supported.
 
 * {{+blocks}}  Updates or sets one or more template blocks. Takes an alist.
 
+* {{+macros}}  Updates or sets one or more template macros. Takes an alist.
+
 * {{-vars}}    Unsets one or more variables. Takes a list of symbols.
 
 * {{-attrs}}   Unsets one or more attributes. Takes a list of symbols.
@@ -217,7 +231,9 @@ keyword arguments are supported.
 
 * {{-blocks}}  Unsets one or more template blocks. Takes a list of symbols.
 
-* {{state}}    Sets the state. Takes a symbol
+* {{-macros}}  Unsets one or more template macros. Takes a list of symbols.
+
+* {{state}}    Sets the state. Takes a symbol.
 
 ==== PARAMETERS
 
@@ -268,7 +284,7 @@ your templates.
 The namespace URI for Civet vocabulary elements. Overriding this is not
 recommended.
 
-'''Default:''' {{"http://xmlns.therebetygers.net/civet/0.1"}}
+'''Default:''' {{"http://xmlns.therebetygers.net/civet/0.2"}}
 
 <parameter>*default-nsmap*</parameter>
 
@@ -303,7 +319,7 @@ first is used for ascending sorts, the second for descending.
       (boolean . (,(lambda (a b) (or (not a) b)) ,(lambda (a b) (or a (not b))))))
 
 
-=== Template Vocabulary, version 0.1
+=== Template Vocabulary, version 0.2
 
 The following describes the complete vocabulary of elements and attributes
 represented by the {{civet}} namespace. At present there is no formal
@@ -330,12 +346,12 @@ NOTES:
 
 ==== cvt:template
 
-This is the document element for an extension template. As of Version 0.1, a
+This is the document element for an extension template. As of Version 0.2, a
 {{cvt:template}} element may only contain {{cvt:head}}, {{cvt:block}} elements. Any
 other content will be discarded by the processor.
 
 A base template does '''not''' use {{cvt:template}}; rather, its document element
-should be the document element required by the target document type.
+should be the document element required by the target document type, e.g. {{html}}.
 
 '''Context:'''
 
@@ -374,6 +390,8 @@ May contain, in any order:
 
 * {{cvt:defvar}} [zero or more]
 
+* {{cvt:defmacro}} [zero or more]
+
 
 ----
 
@@ -410,7 +428,9 @@ Empty.
 
 Sets a variable's value within its local scope (i.e. for the template if
 contained in {{cvt:head}}, otherwise within the lexical scope of its parent
-element).
+element). The value may be specified either by a {{value}} attribute whose
+value is a literal string, or by the element content; if both are present,
+the attribute takes precedence.
 
 '''Context:'''
 
@@ -432,6 +452,39 @@ Any element other than {{cvt:template}}, {{cvt:head}}, or {{cvt:block}}
 
 * {{value}} [optional] This attribute may be used instead of child nodes to
   specify the value, if the value consists of a single text node. 
+ 
+
+----
+
+
+==== cvt:defmacro
+
+Defines a macro. A macro has a name and contains XML nodes which are
+evaluated in the lexical scope where a macro is referenced using the
+{{cvt:macro}} element. Thus the macro may contain arbitrary template
+markup including references to variables that are unbound at macro
+definition time. Please note that as of library version 0.3.0, there
+are certain template markup elements that will not work as you may
+expect in a macro. These include {{cvt:attr}}, {{cvt:else}}, and
+{{cvt:interpolate}}. These elements are handled outside the normal
+processing flow; therefore, if you use one of them as the ''child''
+of {{cvt:macro}}, there will be no result when the macro is evaluated.
+On the other hand, these elements ''should'' work as descendants of
+other elements within a macro definition, but this has not been
+systematically tested.
+
+'''Context:'''
+
+Within {{cvt:head}}.
+
+'''Content:'''
+
+Any element other than {{cvt:template}}, {{cvt:head}}, or {{cvt:block}}.
+
+'''Attributes:'''
+
+* {{name}} [required] The name of the macro. Must be unique within the
+  template.
 
 
 ----
@@ -484,8 +537,10 @@ ancestor template.
 ==== cvt:var
 
 A placeholder for inserting dynamic content. Variables are generally passed
-by the processor, but may also be defined within the template (see
-{{cvt:defvar}}). Assignment is not supported.
+by the processing application, but may also be defined within the template
+(see {{cvt:defvar}}). There is no mechanism for assigning a new value to an
+existing variable, but names may be reused in local bindings (e.g. a block-
+level definition).
 
 '''Attributes:'''
 
@@ -522,8 +577,22 @@ by the processor, but may also be defined within the template (see
 
 * {{format}} [optional] The name of a formatting function defined in the
   civet library or in your application. This function is usually
-  associated with a specific data type. Future versions of the library may
-  support locale-dependent formatters, as for dates.
+  associated with a specific data type. As of version 0.3 of the library,
+  {{format="uri"}} will cause the output to be uri-encoded. Future versions
+  of the library will include additional options and provide a mechanism
+  for user-defined formatters.
+
+
+----
+
+==== cvt:macro
+
+References a macro defined with {{cvt:defmacro}}. All contents of the named
+macro will be evaluated in the lexical scope where this element is placed.
+
+'''Attributes:'''
+
+* {{name}} [required] The name of the macro.
 
 
 ----
@@ -534,11 +603,9 @@ The basic conditional structure. If the test specified by the {{test}} attribute
 returns true, all content of the {{cvt:if}} element is written to the output;
 otherwise it is ommitted. May contain an optional {{cvt:else}} element.
 
-NOTE: The effects of nested {{cvt:if}} elements have not been tested.
-
 '''Context:'''
 
-May be contained within any element, but see above note on nesting.
+May be contained within any element.
 
 '''Contents:'''
 
@@ -595,15 +662,49 @@ Iterate over a list variable.
 * {{in}} [required] Equivalent to the name attribute for {{var}} and {{block}}.
 
 * {{sort}} [optional, default=auto] The sorting method to use. May be 'alpha',
-  'numeric', 'auto', or the name of a user-defined procedure. 'Auto' means
-  that civet will select a sorting method based on the datatype of the
-  variable. This may degrade performance and produce unexpected results, so
-  it is best to specify the sorting method whenever possible. 
+  'numeric', 'auto', or 'none'. 'Auto' means that civet will select a sorting
+  method based on the datatype of the variable. This may degrade performance
+  and produce unexpected results, so it is best to specify the sorting method
+  whenever possible. Future versions of the library may allow user-defined
+  sorting functions.
 
 * {{sort-field}} [optional] If the variable refers to a list of objects, this
   attribute specifies the field that should be used to sort the list.
 
-* {{order}} [optional, default=asc] Possible values are 'asc' and 'desc'.
+* {{order}} [optional, default=asc] Possible values are 'asc' (ascending) and
+  'desc' (descending).
+
+----
+
+==== cvt:interpolate
+
+Inserts text or markup between the iterations of a {{cvt:for}} loop. Any {{cvt:for}}
+element may have up to three {{cvt:interpolate}} children (with different {{mode}}
+attributes). The content of {{cvt:interpolate}}, when it appears (see the description
+of the {{mode}} attribute below, follows all content of the {{cvt:for}} loop.
+
+'''Context:''' 
+
+Within a {{cvt:for}} element.
+
+'''Content:'''
+
+Text, or any element other than {{cvt:template}}, {{cvt:head}}, or {{cvt:block}}.
+
+'''Attributes:'''
+
+* {{mode}} [optional, default=default] Determines whether to insert the content,
+  depending on the state of the loop. The following values are recognized:
+
+** '''default:''' Insert this content on every iteration of the loop except the
+   last, unless overridden by another {{cvt:interpolate}} element with a different
+   mode.
+
+** '''last:''' Insert this content after the next-to-last iteration. Overrides
+   'default'.
+
+** '''pair:''' When the loop variable has exactly two elements, insert this content
+   between them. Overrides 'last' and 'default'.
 
 ----
 
@@ -633,7 +734,12 @@ None.
 
 Sets an attribute on its parent element. If the literal attribute is already
 defined on the parent, the value specified by this element overrides it.
-Otherwise, it adds a new attribute to the parent.
+Otherwise, it adds a new attribute to the parent. The value may be specified
+by a variable reference specified by a {{var}} attribute, or by the element
+content. If both are present, the attribute takes precedence.
+
+NOTE: As of library version 0.3.0, the {{var}} attribute does not work. This will
+be fixed in the next release.
 
 '''Context:'''
 
@@ -641,8 +747,8 @@ Any element from the target vocabulary.
 
 '''Content:'''
 
-A string, or an expression that evaluates to a string (such as a {{cvt:var}}
-element with a string value).
+Any combination of strings and template markup that evaluates to a single
+string.
 
 '''Attributes:'''
 
@@ -650,8 +756,7 @@ element with a string value).
 
 * {{type}} [optional, default: string]
 
-* {{var}}  [optional] Either this attribute or a {{cvt:var}} child element must be
-  present.
+* {{var}}  [optional] References a variable to supply the value.
 
 
 ==== Variable substitution in attributes
@@ -752,6 +857,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 === Version History
+
+;0.3.0:     Added interpolation in {{for}} loops, macros, and {{format="uri"}} for variable references.
 
 ;0.2.1:     Edited docs & converted to svnwiki format.
 
