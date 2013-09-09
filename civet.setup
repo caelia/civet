@@ -3,4 +3,4 @@
 (install-extension
   'civet
   '("civet.so" "civet.import.so")
-  '((version "0.3.0")))
+  '((version "0.3.1")))
