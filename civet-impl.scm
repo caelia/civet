@@ -25,6 +25,7 @@
 
 (use utf8)
 (use utf8-srfi-13)
+(use utf8-srfi-14)
 (use uri-common)
 (use ssax)
 (use sxpath)
@@ -797,7 +798,7 @@
                      (string-join raw-val "")))))))
     ;; FIXME: This simply uses the raw string value of the attribute,
     ;;   no accounting for type or format
-    (list (string->symbol name) (string-trim-both value))))
+    (list (string->symbol name) (string-trim-both value char-set:whitespace))))
 
 ;; Apparently there are no unknown cvt: elements, but I'll keep this
 ;;   for the time being, just in case.
