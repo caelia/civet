@@ -793,8 +793,10 @@
                     raw-val)
                    ((null? raw-val)
                     "")
+                   ((list? raw-val)
+                    (string-join raw-val ""))
                    (else
-                     (string-join raw-val "")))))))
+                     (->string raw-val))))))
     ;; FIXME: This simply uses the raw string value of the attribute,
     ;;   no accounting for type or format
     (list (string->symbol name) (string-trim-both value))))
