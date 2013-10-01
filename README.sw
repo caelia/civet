@@ -463,7 +463,7 @@ Defines a macro. A macro has a name and contains XML nodes which are
 evaluated in the lexical scope where a macro is referenced using the
 {{cvt:macro}} element. Thus the macro may contain arbitrary template
 markup including references to variables that are unbound at macro
-definition time. Please note that as of library version 0.3.1, there
+definition time. Please note that as of library version 0.3.3, there
 are certain template markup elements that will not work as you may
 expect in a macro. These include {{cvt:attr}}, {{cvt:else}}, and
 {{cvt:interpolate}}. These elements are handled outside the normal
@@ -621,7 +621,7 @@ The {{test}} attribute uses a simple expression language, including the
 following expressions:
 
 <var-name>   Returns #t if the variable is defined in the current
-context, false otherwise.
+context, and is neither false nor null, false otherwise.
 
 <var-name> = <expr>   Returns #t if the variable value is equal
 (using equal?) to the right-side expression. The right-side expression may
@@ -738,7 +738,7 @@ Otherwise, it adds a new attribute to the parent. The value may be specified
 by a variable reference specified by a {{var}} attribute, or by the element
 content. If both are present, the attribute takes precedence.
 
-NOTE: As of library version 0.3.1, the {{var}} attribute does not work. This will
+NOTE: As of library version 0.3.3, the {{var}} attribute does not work. This will
 be fixed in the next release.
 
 '''Context:'''
@@ -857,6 +857,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 === Version History
+
+;0.3.3:     Modified expression language to treat null values as false.
 
 ;0.3.1:     Fixed meta file.
 

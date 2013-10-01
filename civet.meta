@@ -3,4 +3,4 @@
  (depends utf8 uri-common ssax sxpath sxml-serializer) 
  (test-depends test)   
  (author "Matt Gushee")
- (synopsis "An XML-to-XML template processor."))
+ (synopsis "An XML-based template processor."))
