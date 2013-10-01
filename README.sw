@@ -14,7 +14,7 @@ Matt Gushee <matt@gushee.net>
 
 === Requirements
 
-[[utf8]], [[ssax]], [[sxpath]], [[sxml-serializer]]
+[[utf8]], [[uri-common]], [[ssax]], [[sxpath]], [[sxml-serializer]]
 
 === Introduction
 
