@@ -106,15 +106,17 @@
             (oxymoron . '("alabaster" "brittle" "codicils" "dervish"))
             (pernicious . '("dervish" "brittle" "codicils" "alabaster"))
             (quixotic . #t) (rapacious . (vector #\x #\y #\z))
-            (serpent . "That's all!") (tenacity . 219.0) (usurper . 324.0))
+            (serpent . "That's all!") (tenacity . 219.0) (usurper . 324.0)
+            (varnish))
     state: 'init))
 
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
 (test-group "Expression Language"
-  (test "Variable defined?                    [true ]" #t (not (not (eval-test "oxymoron" ctx01))))
-  (test "Variable defined?                    [false]" #f (eval-test "zebra" ctx01)) 
+  (test "Variable defined, true, non-null?    [true ]" #t (not (not (eval-test "oxymoron" ctx01))))
+  (test "Variable defined, true, non-null?    [false]" #f (eval-test "zebra" ctx01)) 
+  (test "Variable defined, true, non-null?    [false]" #f (eval-test "varnish" ctx01)) 
   (test "Integer variable = integer constant  [true ]" #t (eval-test "aardvark = 219" ctx01))
   (test "Integer variable = integer constant  [false]" #f (eval-test "aardvark = 42" ctx01))
   (test "Integer variable = float constant    [true ]" #t (eval-test "aardvark = 219.0" ctx01))

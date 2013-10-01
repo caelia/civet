@@ -265,7 +265,8 @@
             (func (ims m 'func)))
         (cond
           (bare-var
-            (get-var bare-var))
+            (let ((val (get-var bare-var)))
+              (and val (not (null? val)))))
           (lhs-var
             (let* ((lhs-value (get-var lhs-var))
                    (rhs-var (ims m 'rhs-var))
