@@ -34,12 +34,12 @@ inserts dynamic content and controls the structure of the output. For the
 sake of brevity, these two types of markup may be referred to as 'literal
 markup' and 'template markup' respectively.
 
-A '''template set''' consists of a '''base template''' and one or more '''extension
-templates'''. The base template determines the document type of the output and
-its overall structure. As of Version 0.2, the content of extension templates is
-restricted to metadata contained in a '''head''' element, and content contained
-in one or more '''blocks'''. Any content outside of these structures in an
-extension template will be ignored. 
+A '''template set''' consists of a '''base template''' and one or more
+'''extension templates'''. The base template determines the document type of
+the output and its overall structure. As of language version 0.2, the content
+of extension templates is restricted to metadata contained in a '''head'''
+element, and content contained in one or more '''blocks'''. Any content outside
+of these structures in an extension template will be ignored. 
 
 Extension templates are used to specialize various aspects of the base
 template. They may also be chained so as to specialize other extension
@@ -463,7 +463,7 @@ Defines a macro. A macro has a name and contains XML nodes which are
 evaluated in the lexical scope where a macro is referenced using the
 {{cvt:macro}} element. Thus the macro may contain arbitrary template
 markup including references to variables that are unbound at macro
-definition time. Please note that as of library version 0.3.3, there
+definition time. Please note that as of library version 0.3.4, there
 are certain template markup elements that will not work as you may
 expect in a macro. These include {{cvt:attr}}, {{cvt:else}}, and
 {{cvt:interpolate}}. These elements are handled outside the normal
@@ -738,7 +738,7 @@ Otherwise, it adds a new attribute to the parent. The value may be specified
 by a variable reference specified by a {{var}} attribute, or by the element
 content. If both are present, the attribute takes precedence.
 
-NOTE: As of library version 0.3.3, the {{var}} attribute does not work. This will
+NOTE: As of library version 0.3.4, the {{var}} attribute does not work. This will
 be fixed in the next release.
 
 '''Context:'''
@@ -857,6 +857,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 === Version History
+
+;0.3.4:     Added version to utf8 dependency.
 
 ;0.3.3:     Modified expression language to treat null values as false.
 
