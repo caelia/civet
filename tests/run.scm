@@ -959,6 +959,37 @@ XML
      (head (title))
      (body (p "Tag: " "water_balloons")))))
 
+(define ctx-tr11-3
+  (standard-test-context '((weird_uri . "http://some.uri.com/with white space"))))
+
+(define doc-tr11-3-in
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html (@ (xml:lang "en") (lang "en"))
+         (head (title))
+         (body 
+           (a
+             (cvt:attr
+               (@ (name "href") (var "weird_uri") (type "uri")))
+             "Link Text")))))
+
+(define doc-tr11-3-out
+'(*TOP* 
+   (@ 
+     (*NAMESPACES*
+       (#f "http://www.w3.org/1999/xhtml")
+       (cvt "http://xmlns.therebetygers.net/civet/0.2")))
+   (html 
+     (@ (xml:lang "en") (lang "en"))
+     (head (title))
+     (body 
+       (a
+         (@ (href "http://some.uri.com/with%20white%20space"))
+         "Link Text")))))
+
 ;;; ========================================================================
 ;;; ------  Run tests  -----------------------------------------------------
 
@@ -970,7 +1001,11 @@ XML
   (test
     "TR11.02: uri-encode a string without spaces"
     doc-tr11-2-out
-    (process-base-template doc-tr11-1-in '() ctx-tr11-2)))
+    (process-base-template doc-tr11-1-in '() ctx-tr11-2))
+  (test
+    "TR11.03: uri-encode an inserted attribute."
+    doc-tr11-3-out
+    (process-base-template doc-tr11-3-in '() ctx-tr11-3)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
