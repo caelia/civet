@@ -783,22 +783,23 @@
 ;;   get the value of a child element
 (define (%cvt:attr elt ctx)
   (let* ((attrs (get-attrs elt))
-         (name (get-attval attrs 'name))
-         (value* (get-attval attrs 'value))
+         (attname (get-attval attrs 'name))
+         (varname (get-attval attrs 'var))
          (value
-           (or value*
-               (let* ((kids (get-kids elt))
-                      (raw-val (process-tree kids ctx)))
-                 (cond
-                   ((string? raw-val)
-                    raw-val)
-                   ((null? raw-val)
-                    "")
-                   (else
-                     (string-join raw-val "")))))))
+           (if varname
+             (ctx 'get-var varname)
+             (let* ((kids (get-kids elt))
+                    (raw-val (process-tree kids ctx)))
+               (cond
+                 ((string? raw-val)
+                  raw-val)
+                 ((null? raw-val)
+                  "")
+                 (else
+                   (string-join raw-val "")))))))
     ;; FIXME: This simply uses the raw string value of the attribute,
     ;;   no accounting for type or format
-    (list (string->symbol name) (string-trim-both value))))
+    (list (string->symbol attname) (string-trim-both value))))
 
 ;; Apparently there are no unknown cvt: elements, but I'll keep this
 ;;   for the time being, just in case.
