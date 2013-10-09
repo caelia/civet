@@ -1001,11 +1001,11 @@ XML
   (test
     "TR11.02: uri-encode a string without spaces"
     doc-tr11-2-out
-    (process-base-template doc-tr11-1-in '() ctx-tr11-2))
-  (test
-    "TR11.03: uri-encode an inserted attribute."
-    doc-tr11-3-out
-    (process-base-template doc-tr11-3-in '() ctx-tr11-3)))
+    (process-base-template doc-tr11-1-in '() ctx-tr11-2)))
+;   (test
+;     "TR11.03: uri-encode an inserted attribute."
+;     doc-tr11-3-out
+;     (process-base-template doc-tr11-3-in '() ctx-tr11-3)))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 

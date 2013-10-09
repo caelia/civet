@@ -173,7 +173,7 @@
     (foldl
       (lambda (str* fmt)
         (case fmt
-          ((uri) (uri-reference str*))
+          ((uri) (uri-encode-string str*))
           (else str*)))
       str
       fmts)))
@@ -785,8 +785,7 @@
   (let* ((attrs (get-attrs elt))
          (attname (get-attval attrs 'name))
          (varname (get-attval attrs 'var))
-         (vartype (get-attval attrs 'type))
-         (value*
+         (value
            (if varname
              (ctx 'get-var varname)
              (let* ((kids (get-kids elt))
@@ -797,12 +796,7 @@
                  ((null? raw-val)
                   "")
                  (else
-                   (string-join raw-val ""))))))
-         (value
-           (and value*
-                (if vartype
-                  (apply-formatting value* vartype)
-                  value*))))
+                   (string-join raw-val "")))))))
     (if value
       (list (string->symbol attname) (string-trim-both value))
       '())))
@@ -842,6 +836,9 @@
   (let* ((name* (car attr))
          (value* (cadr attr))
          (localname (cvt-name? name* ctx))
+         ;;; FIXME: The following code causes the variable name to be output
+         ;;;   as the attribute value if the variable is not found. Probably
+         ;;;   that should cause an error, rather than incorrect output.
          (value
            (or (and localname
                     (ctx 'get-var value*))
