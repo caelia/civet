@@ -167,8 +167,9 @@ XML
          (p "green")))))
 
 (define ctx-tr10-4
-  (standard-test-context '((color . "lime") (size . "12") (age . "27") (divclass . "Poinsettia")
-                           (divid . "baz451") (chapeau . "porkpie"))))
+  (standard-test-context
+    '((color . "lime") (size . "12") (age . "27") (divclass . "Poinsettia")
+      (divid . "baz451") (chapeau . "porkpie") (my_hat . "fedora"))))
 
 (define doc-tr10-4-in
 '(*TOP*
@@ -329,7 +330,7 @@ XML
              (@ (id "fubar79") (class "Poinsettia"))
              (cvt:attr (@ (name "id"))
                        (cvt:var (@ (name "divid"))))
-             (cvt:attr (@ (value "fedora") (name "chapeau")))
+             (cvt:attr (@ (var "my_hat") (name "chapeau")))
              "Div Contents")))))
 
 (define doc-tr10-12-out
