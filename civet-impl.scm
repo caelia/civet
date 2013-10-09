@@ -173,7 +173,7 @@
     (foldl
       (lambda (str* fmt)
         (case fmt
-          ((uri) (uri-encode-string str*))
+          ((uri) (uri-reference str*))
           (else str*)))
       str
       fmts)))
@@ -785,7 +785,8 @@
   (let* ((attrs (get-attrs elt))
          (attname (get-attval attrs 'name))
          (varname (get-attval attrs 'var))
-         (value
+         (vartype (get-attval attrs 'type))
+         (value*
            (if varname
              (ctx 'get-var varname)
              (let* ((kids (get-kids elt))
@@ -796,10 +797,15 @@
                  ((null? raw-val)
                   "")
                  (else
-                   (string-join raw-val "")))))))
-    ;; FIXME: This simply uses the raw string value of the attribute,
-    ;;   no accounting for type or format
-    (list (string->symbol attname) (string-trim-both value))))
+                   (string-join raw-val ""))))))
+         (value
+           (and value*
+                (if vartype
+                  (apply-formatting value* vartype)
+                  value*))))
+    (if value
+      (list (string->symbol attname) (string-trim-both value))
+      '())))
 
 ;; Apparently there are no unknown cvt: elements, but I'll keep this
 ;;   for the time being, just in case.
