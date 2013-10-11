@@ -28,7 +28,7 @@
 (use uri-common)
 (use ssax)
 (use sxpath)
-(use sxml-serializer)
+(use sxml-transforms)
 
 ;;; IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 ;;; ----  GLOBAL DEFINITIONS  ----------------------------------------------
@@ -962,7 +962,12 @@
     (process-base-template template block-data context)))
 
 (define (render template-name context #!key (port #f) (file #f))
-  (let ((final-tree (process-template-set template-name context)))
-    (serialize-sxml final-tree output: (or port file) ns-prefixes: (*sxpath-nsmap*))))
+  (let ((final-tree (process-template-set template-name context))
+        (outport (or port (and file (open-output-file file)))))
+    (when outport
+      (with-output-to-port
+        outport
+        (lambda ()
+          (SRV:send-reply (pre-post-order* final-tree universal-conversion-rules*)))))))
 
 ;;; OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
